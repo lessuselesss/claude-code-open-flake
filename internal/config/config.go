@@ -27,6 +27,7 @@ var (
 		"nvidia":     "https://integrate.api.nvidia.com/v1/chat/completions",
 		"gemini":     "https://generativelanguage.googleapis.com/v1beta/models",
 		"ollama":     "http://localhost:11434/v1/chat/completions",
+		"deepseek":   "https://api.deepseek.com/v1/chat/completions",
 	}
 
 	// Default models for each provider
@@ -63,6 +64,11 @@ var (
 			"codellama",
 			"mistral",
 			"qwen2.5-coder",
+		},
+		"deepseek": {
+			"deepseek-chat",
+			"deepseek-coder",
+			"deepseek-reasoner",
 		},
 	}
 )
@@ -136,6 +142,7 @@ func (m *Manager) createMinimalConfig() Config {
 			{Name: "nvidia", APIBase: DefaultProviderURLs["nvidia"]},
 			{Name: "gemini", APIBase: DefaultProviderURLs["gemini"]},
 			{Name: "ollama", APIBase: DefaultProviderURLs["ollama"]},
+			{Name: "deepseek", APIBase: DefaultProviderURLs["deepseek"]},
 		},
 		Router: RouterConfig{
 			Default:     "openrouter,anthropic/claude-3.5-sonnet",
@@ -418,6 +425,10 @@ func (m *Manager) CreateExampleYAML() error {
 			{
 				Name:   "ollama",
 				APIKey: "ollama", // Ollama doesn't require a real API key
+			},
+			{
+				Name:   "deepseek",
+				APIKey: "your-deepseek-api-key",
 			},
 		},
 		Router: RouterConfig{

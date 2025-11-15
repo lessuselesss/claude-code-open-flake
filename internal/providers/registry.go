@@ -87,6 +87,8 @@ func (r *Registry) GetByDomain(apiBase string) (Provider, error) {
 		"googleapis.com":                    "gemini",
 		"localhost":                         "ollama",
 		"127.0.0.1":                         "ollama",
+		"api.deepseek.com":                  "deepseek",
+		"deepseek.com":                      "deepseek",
 	}
 
 	if providerName, exists := domainProviderMap[domain]; exists {
@@ -125,6 +127,8 @@ func (r *Registry) Initialize(cfgProviders []config.Provider) {
 			r.Register(NewGeminiProvider(cfgProvider))
 		case "ollama":
 			r.Register(NewOllamaProvider(cfgProvider))
+		case "deepseek":
+			r.Register(NewDeepSeekProvider(cfgProvider))
 		}
 	}
 }
