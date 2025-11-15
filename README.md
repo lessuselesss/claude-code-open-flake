@@ -710,6 +710,46 @@ cco config validate
 </tr>
 </table>
 
+### 🎨 Interactive Tools
+
+<table>
+<tr>
+<td width="50%">
+
+**🤖 Model Browser**
+```bash
+# Interactive TUI for browsing models
+cco models
+
+# List all models (plain text)
+cco models list
+
+# Filter by provider
+cco models list --provider=ollama
+```
+
+</td>
+<td width="50%">
+
+**🔧 Shell Activation**
+```bash
+# Bash/Zsh
+eval "$(cco activate)"
+
+# Fish
+cco activate --fish | source
+```
+
+Sets up convenient aliases:
+- `cco-model` - Quick model selection
+- `cco-key` - Set API key
+- `cco-env` - Show environment
+- `cco-start`, `cco-stop`, etc.
+
+</td>
+</tr>
+</table>
+
 ### 💬 Claude Code Integration
 
 ```bash
@@ -1094,7 +1134,26 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 ## 📈 Changelog
 
 <details>
-<summary><b>🎯 v0.4.0 - Latest Release</b></summary>
+<summary><b>🎯 v0.5.0 - Latest Release</b></summary>
+
+<br>
+
+✨ **Interactive Model Browser** - Beautiful TUI for browsing and selecting models
+🐚 **Shell Activation** - Convenient `eval "$(cco activate)"` for aliases and functions
+🧙 **Enhanced Config Wizard** - Improved `cco config init` with provider templates
+📋 **Model Listing** - Quick `cco models list` command with filtering
+⚡ **Better UX** - Streamlined configuration workflow
+🎨 **Bubbletea TUI** - Modern terminal user interface components
+🔧 **Shell Functions** - `cco-model`, `cco-key`, `cco-env` convenience functions
+💻 **Multi-Shell Support** - Works with bash, zsh, and fish shells
+📖 **Improved Documentation** - Comprehensive Phase 2 feature guides
+
+**Phase 2 Enhanced CLI Complete!** CCO now offers an exceptional developer experience.
+
+</details>
+
+<details>
+<summary><b>📦 v0.4.0 - Provider Expansion</b></summary>
 
 <br>
 
