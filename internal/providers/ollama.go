@@ -8,33 +8,41 @@ import (
 	"github.com/Davincible/claude-code-open/internal/config"
 )
 
-type OpenAIProvider struct {
+// OllamaProvider implements the Provider interface for Ollama
+// Ollama provides an OpenAI-compatible API at /v1/chat/completions
+type OllamaProvider struct {
 	Provider *config.Provider
 }
 
-func NewOpenAIProvider(provider *config.Provider) *OpenAIProvider {
-	return &OpenAIProvider{
+func NewOllamaProvider(provider *config.Provider) *OllamaProvider {
+	return &OllamaProvider{
 		Provider: provider,
 	}
 }
 
-func (p *OpenAIProvider) Name() string {
+func (p *OllamaProvider) Name() string {
 	return p.Provider.Name
 }
 
-func (p *OpenAIProvider) SupportsStreaming() bool {
+func (p *OllamaProvider) SupportsStreaming() bool {
 	return true
 }
 
-func (p *OpenAIProvider) GetEndpoint() string {
+func (p *OllamaProvider) GetEndpoint() string {
 	return p.Provider.APIBase
 }
 
-func (p *OpenAIProvider) GetAPIKey() string {
-	return p.Provider.GetAPIKey()
+func (p *OllamaProvider) GetAPIKey() string {
+	// Ollama requires an API key in the request but doesn't validate it
+	// Return "ollama" as a placeholder if no key is configured
+	key := p.Provider.GetAPIKey()
+	if key == "" {
+		return "ollama"
+	}
+	return key
 }
 
-func (p *OpenAIProvider) IsStreaming(headers map[string][]string) bool {
+func (p *OllamaProvider) IsStreaming(headers map[string][]string) bool {
 	if contentType, ok := headers["Content-Type"]; ok {
 		for _, ct := range contentType {
 			if ct == ContentTypeEventStream || strings.Contains(ct, "stream") {
@@ -54,63 +62,25 @@ func (p *OpenAIProvider) IsStreaming(headers map[string][]string) bool {
 	return false
 }
 
-func (p *OpenAIProvider) TransformRequest(request []byte) ([]byte, error) {
-	// OpenAI uses OpenAI format, so we need to transform Anthropic to OpenAI
-	// We can reuse the logic from OpenRouter since both use OpenAI format
+func (p *OllamaProvider) TransformRequest(request []byte) ([]byte, error) {
+	// Ollama uses OpenAI format, so we transform Anthropic to OpenAI
 	return p.transformAnthropicToOpenAI(request)
 }
 
-func (p *OpenAIProvider) TransformResponse(response []byte) ([]byte, error) {
-	// Transform OpenAI response to Anthropic format
-	return p.convertOpenAIToAnthropic(response)
+func (p *OllamaProvider) TransformResponse(response []byte) ([]byte, error) {
+	// Transform Ollama (OpenAI-compatible) response to Anthropic format
+	return p.convertOllamaToAnthropic(response)
 }
 
-func (p *OpenAIProvider) TransformStream(chunk []byte, state *StreamState) ([]byte, error) {
-	return p.convertOpenAIToAnthropicStream(chunk, state)
+func (p *OllamaProvider) TransformStream(chunk []byte, state *StreamState) ([]byte, error) {
+	return p.convertOllamaToAnthropicStream(chunk, state)
 }
 
-
-// Anthropic format structures
-type anthropicResponse struct {
-	ID           string             `json:"id"`
-	Type         string             `json:"type"`
-	Role         string             `json:"role"`
-	Content      []anthropicContent `json:"content"`
-	Model        string             `json:"model"`
-	StopReason   *string            `json:"stop_reason,omitempty"`
-	StopSequence *string            `json:"stop_sequence,omitempty"`
-	Usage        *anthropicUsage    `json:"usage,omitempty"`
-	Error        *anthropicError    `json:"error,omitempty"`
+func (p *OllamaProvider) convertOllamaToAnthropic(ollamaData []byte) ([]byte, error) {
+	return ConvertToAnthropic(ollamaData, p.mapOllamaErrorType, p.convertToolCallID)
 }
 
-type anthropicContent struct {
-	Type      string                 `json:"type"`
-	Text      *string                `json:"text,omitempty"`
-	ID        *string                `json:"id,omitempty"`
-	Name      *string                `json:"name,omitempty"`
-	Input     map[string]any `json:"input,omitempty"`
-	ToolUseID *string                `json:"tool_use_id,omitempty"`
-	Content   any            `json:"content,omitempty"`
-	IsError   *bool                  `json:"is_error,omitempty"`
-}
-
-type anthropicUsage struct {
-	InputTokens            int  `json:"input_tokens"`
-	OutputTokens           int  `json:"output_tokens"`
-	CacheReadInputTokens   *int `json:"cache_read_input_tokens,omitempty"`
-	CacheCreateInputTokens *int `json:"cache_create_input_tokens,omitempty"`
-}
-
-type anthropicError struct {
-	Type    string `json:"type"`
-	Message string `json:"message"`
-}
-
-func (p *OpenAIProvider) convertOpenAIToAnthropic(openaiData []byte) ([]byte, error) {
-	return ConvertToAnthropic(openaiData, p.mapOpenAIErrorType, p.convertToolCallID)
-}
-
-func (p *OpenAIProvider) convertStopReason(openaiReason string) *string {
+func (p *OllamaProvider) convertStopReason(ollamaReason string) *string {
 	mapping := map[string]string{
 		"stop":           "end_turn",
 		"length":         "max_tokens",
@@ -120,7 +90,7 @@ func (p *OpenAIProvider) convertStopReason(openaiReason string) *string {
 		"null":           "end_turn",
 	}
 
-	if anthropicReason, exists := mapping[openaiReason]; exists {
+	if anthropicReason, exists := mapping[ollamaReason]; exists {
 		return &anthropicReason
 	}
 
@@ -129,7 +99,8 @@ func (p *OpenAIProvider) convertStopReason(openaiReason string) *string {
 	return &defaultReason
 }
 
-func (p *OpenAIProvider) mapOpenAIErrorType(openaiType string) string {
+func (p *OllamaProvider) mapOllamaErrorType(ollamaType string) string {
+	// Ollama uses similar error types to OpenAI
 	mapping := map[string]string{
 		"invalid_request_error":    "invalid_request_error",
 		"authentication_error":     "authentication_error",
@@ -141,18 +112,18 @@ func (p *OpenAIProvider) mapOpenAIErrorType(openaiType string) string {
 		"insufficient_quota_error": "billing_error",
 	}
 
-	if anthropicType, exists := mapping[openaiType]; exists {
+	if anthropicType, exists := mapping[ollamaType]; exists {
 		return anthropicType
 	}
 
 	return "api_error"
 }
 
-func (p *OpenAIProvider) convertOpenAIToAnthropicStream(openaiData []byte, state *StreamState) ([]byte, error) {
-	return ConvertOpenAIStyleToAnthropicStream(openaiData, state, p, "OpenAI")
+func (p *OllamaProvider) convertOllamaToAnthropicStream(ollamaData []byte, state *StreamState) ([]byte, error) {
+	return ConvertOpenAIStyleToAnthropicStream(ollamaData, state, p, "Ollama")
 }
 
-func (p *OpenAIProvider) createMessageStartEvent(messageID, model string, firstChunk map[string]any) map[string]any {
+func (p *OllamaProvider) createMessageStartEvent(messageID, model string, firstChunk map[string]any) map[string]any {
 	usage := map[string]any{
 		"input_tokens":  0,
 		"output_tokens": 1,
@@ -185,7 +156,7 @@ func (p *OpenAIProvider) createMessageStartEvent(messageID, model string, firstC
 	}
 }
 
-func (p *OpenAIProvider) formatSSEEvent(eventType string, data map[string]any) []byte {
+func (p *OllamaProvider) formatSSEEvent(eventType string, data map[string]any) []byte {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return []byte("event: error\ndata: {\"error\":\"failed to marshal data\"}\n\n")
@@ -194,7 +165,7 @@ func (p *OpenAIProvider) formatSSEEvent(eventType string, data map[string]any) [
 }
 
 // handleTextContent processes text content streaming
-func (p *OpenAIProvider) handleTextContent(content string, state *StreamState) []byte {
+func (p *OllamaProvider) handleTextContent(content string, state *StreamState) []byte {
 	var events []byte
 
 	// Get or create text content block at index 0
@@ -214,7 +185,7 @@ func (p *OpenAIProvider) handleTextContent(content string, state *StreamState) [
 }
 
 // handleToolCalls processes tool call streaming
-func (p *OpenAIProvider) handleToolCalls(toolCalls []any, state *StreamState) []byte {
+func (p *OllamaProvider) handleToolCalls(toolCalls []any, state *StreamState) []byte {
 	var events []byte
 
 	for _, toolCall := range toolCalls {
@@ -228,7 +199,7 @@ func (p *OpenAIProvider) handleToolCalls(toolCalls []any, state *StreamState) []
 }
 
 // handleSingleToolCall processes a single tool call
-func (p *OpenAIProvider) handleSingleToolCall(toolCall map[string]any, state *StreamState) []byte {
+func (p *OllamaProvider) handleSingleToolCall(toolCall map[string]any, state *StreamState) []byte {
 	var events []byte
 
 	// Parse tool call data
@@ -264,8 +235,8 @@ func (p *OpenAIProvider) handleSingleToolCall(toolCall map[string]any, state *St
 	return events
 }
 
-// OpenAIToolCallData holds parsed tool call information for OpenAI provider
-type OpenAIToolCallData struct {
+// OllamaToolCallData holds parsed tool call information for Ollama provider
+type OllamaToolCallData struct {
 	Index        int
 	HasIndex     bool
 	ID           string
@@ -273,9 +244,9 @@ type OpenAIToolCallData struct {
 	Arguments    string
 }
 
-// parseToolCallData extracts tool call information from OpenAI chunk
-func (p *OpenAIProvider) parseToolCallData(toolCall map[string]any) OpenAIToolCallData {
-	data := OpenAIToolCallData{}
+// parseToolCallData extracts tool call information from Ollama chunk
+func (p *OllamaProvider) parseToolCallData(toolCall map[string]any) OllamaToolCallData {
+	data := OllamaToolCallData{}
 
 	// Parse tool call index
 	toolCallIndex, hasIndex := toolCall["index"].(float64)
@@ -300,7 +271,7 @@ func (p *OpenAIProvider) parseToolCallData(toolCall map[string]any) OpenAIToolCa
 }
 
 // findOrCreateContentBlock locates existing content block or creates new one
-func (p *OpenAIProvider) findOrCreateContentBlock(data OpenAIToolCallData, state *StreamState) int {
+func (p *OllamaProvider) findOrCreateContentBlock(data OllamaToolCallData, state *StreamState) int {
 	// First try to find by tool call index
 	if data.HasIndex {
 		for blockIdx, block := range state.ContentBlocks {
@@ -337,19 +308,19 @@ func (p *OpenAIProvider) findOrCreateContentBlock(data OpenAIToolCallData, state
 }
 
 // updateContentBlock updates content block with new tool call data
-func (p *OpenAIProvider) updateContentBlock(block *ContentBlockState, data OpenAIToolCallData) {
+func (p *OllamaProvider) updateContentBlock(block *ContentBlockState, data OllamaToolCallData) {
 	if data.FunctionName != "" {
 		block.ToolName = data.FunctionName
 	}
 }
 
 // shouldSendStartEvent determines if content_block_start event should be sent
-func (p *OpenAIProvider) shouldSendStartEvent(block *ContentBlockState) bool {
+func (p *OllamaProvider) shouldSendStartEvent(block *ContentBlockState) bool {
 	return block.ToolCallID != "" && block.ToolName != ""
 }
 
 // createContentBlockStartEvent creates content_block_start SSE event
-func (p *OpenAIProvider) createContentBlockStartEvent(index int, block *ContentBlockState) []byte {
+func (p *OllamaProvider) createContentBlockStartEvent(index int, block *ContentBlockState) []byte {
 	claudeToolID := p.convertToolCallID(block.ToolCallID)
 
 	contentBlockStartEvent := map[string]any{
@@ -366,8 +337,8 @@ func (p *OpenAIProvider) createContentBlockStartEvent(index int, block *ContentB
 	return p.formatSSEEvent("content_block_start", contentBlockStartEvent)
 }
 
-// convertToolCallID converts OpenAI tool call ID to Claude format
-func (p *OpenAIProvider) convertToolCallID(toolCallID string) string {
+// convertToolCallID converts Ollama tool call ID to Claude format
+func (p *OllamaProvider) convertToolCallID(toolCallID string) string {
 	if strings.HasPrefix(toolCallID, "toolu_") {
 		return toolCallID
 	}
@@ -380,7 +351,7 @@ func (p *OpenAIProvider) convertToolCallID(toolCallID string) string {
 }
 
 // calculateArgumentsDelta calculates the incremental part of arguments
-func (p *OpenAIProvider) calculateArgumentsDelta(newArgs, oldArgs string) string {
+func (p *OllamaProvider) calculateArgumentsDelta(newArgs, oldArgs string) string {
 	// Check if arguments are incremental (common case)
 	if len(newArgs) > len(oldArgs) && strings.HasPrefix(newArgs, oldArgs) {
 		return newArgs[len(oldArgs):] // Extract new part
@@ -390,7 +361,7 @@ func (p *OpenAIProvider) calculateArgumentsDelta(newArgs, oldArgs string) string
 }
 
 // createInputDeltaEvent creates input_json_delta SSE event
-func (p *OpenAIProvider) createInputDeltaEvent(index int, partialJSON string) []byte {
+func (p *OllamaProvider) createInputDeltaEvent(index int, partialJSON string) []byte {
 	inputDeltaEvent := map[string]any{
 		"type":  "content_block_delta",
 		"index": index,
@@ -404,7 +375,7 @@ func (p *OpenAIProvider) createInputDeltaEvent(index int, partialJSON string) []
 }
 
 // getOrCreateTextBlock gets or creates text content block at index 0
-func (p *OpenAIProvider) getOrCreateTextBlock(state *StreamState) int {
+func (p *OllamaProvider) getOrCreateTextBlock(state *StreamState) int {
 	textIndex := 0
 	if _, exists := state.ContentBlocks[textIndex]; !exists {
 		state.ContentBlocks[textIndex] = &ContentBlockState{
@@ -416,7 +387,7 @@ func (p *OpenAIProvider) getOrCreateTextBlock(state *StreamState) int {
 }
 
 // createTextBlockStartEvent creates content_block_start event for text
-func (p *OpenAIProvider) createTextBlockStartEvent(index int) []byte {
+func (p *OllamaProvider) createTextBlockStartEvent(index int) []byte {
 	contentBlockStartEvent := map[string]any{
 		"type":  "content_block_start",
 		"index": index,
@@ -430,7 +401,7 @@ func (p *OpenAIProvider) createTextBlockStartEvent(index int) []byte {
 }
 
 // createTextDeltaEvent creates content_block_delta event for text
-func (p *OpenAIProvider) createTextDeltaEvent(index int, text string) []byte {
+func (p *OllamaProvider) createTextDeltaEvent(index int, text string) []byte {
 	contentDeltaEvent := map[string]any{
 		"type":  "content_block_delta",
 		"index": index,
@@ -444,7 +415,7 @@ func (p *OpenAIProvider) createTextDeltaEvent(index int, text string) []byte {
 }
 
 // handleFinishReason processes finish reasons and sends appropriate events
-func (p *OpenAIProvider) handleFinishReason(reason string, chunk map[string]any, state *StreamState) []byte {
+func (p *OllamaProvider) handleFinishReason(reason string, chunk map[string]any, state *StreamState) []byte {
 	return HandleFinishReason(p, reason, chunk, state, func(chunk map[string]any) map[string]any {
 		if usage, ok := chunk["usage"].(map[string]any); ok {
 			return p.convertUsage(usage)
@@ -455,7 +426,7 @@ func (p *OpenAIProvider) handleFinishReason(reason string, chunk map[string]any,
 }
 
 // convertUsage handles usage information conversion
-func (p *OpenAIProvider) convertUsage(usage map[string]any) map[string]any {
+func (p *OllamaProvider) convertUsage(usage map[string]any) map[string]any {
 	anthropicUsage := make(map[string]any)
 
 	// Map token fields
@@ -482,13 +453,13 @@ func (p *OpenAIProvider) convertUsage(usage map[string]any) map[string]any {
 	return anthropicUsage
 }
 
-// transformAnthropicToOpenAI converts Anthropic/Claude format to OpenAI format for OpenAI
-func (p *OpenAIProvider) transformAnthropicToOpenAI(anthropicRequest []byte) ([]byte, error) {
+// transformAnthropicToOpenAI converts Anthropic/Claude format to OpenAI format for Ollama
+func (p *OllamaProvider) transformAnthropicToOpenAI(anthropicRequest []byte) ([]byte, error) {
 	return TransformAnthropicToOpenAI(anthropicRequest, p)
 }
 
-// Helper methods for transformAnthropicToOpenAI (similar to OpenRouter)
-func (p *OpenAIProvider) removeAnthropicSpecificFields(request map[string]any) map[string]any {
+// Helper methods for transformAnthropicToOpenAI
+func (p *OllamaProvider) removeAnthropicSpecificFields(request map[string]any) map[string]any {
 	fieldsToRemove := []string{"cache_control"}
 
 	if store, hasStore := request["store"]; !hasStore || store != true {
@@ -506,7 +477,7 @@ func (p *OpenAIProvider) removeAnthropicSpecificFields(request map[string]any) m
 	return cleaned
 }
 
-func (p *OpenAIProvider) removeFieldsRecursively(data any, fieldsToRemove []string) any {
+func (p *OllamaProvider) removeFieldsRecursively(data any, fieldsToRemove []string) any {
 	switch v := data.(type) {
 	case map[string]any:
 		result := make(map[string]any)
@@ -539,11 +510,11 @@ func (p *OpenAIProvider) removeFieldsRecursively(data any, fieldsToRemove []stri
 	}
 }
 
-func (p *OpenAIProvider) transformTools(tools []any) ([]any, error) {
+func (p *OllamaProvider) transformTools(tools []any) ([]any, error) {
 	return TransformTools(tools)
 }
 
-func (p *OpenAIProvider) transformMessages(messages []any) []any {
+func (p *OllamaProvider) transformMessages(messages []any) []any {
 	transformedMessages := make([]any, 0, len(messages))
 
 	for _, message := range messages {
@@ -574,7 +545,7 @@ func (p *OpenAIProvider) transformMessages(messages []any) []any {
 	return transformedMessages
 }
 
-func (p *OpenAIProvider) extractToolResults(content []any) []any {
+func (p *OllamaProvider) extractToolResults(content []any) []any {
 	var toolMessages []any
 
 	for _, block := range content {
@@ -601,6 +572,6 @@ func (p *OpenAIProvider) extractToolResults(content []any) []any {
 	return nil
 }
 
-func (p *OpenAIProvider) transformAssistantMessage(msgMap map[string]any, content []any) map[string]any {
+func (p *OllamaProvider) transformAssistantMessage(msgMap map[string]any, content []any) map[string]any {
 	return TransformAssistantMessage(msgMap, content)
 }

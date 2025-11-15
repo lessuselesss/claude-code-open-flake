@@ -58,73 +58,145 @@ func init() {
 }
 
 func runConfigInit(cmd *cobra.Command, _ []string) error {
-	color.Blue("Claude Code Router Configuration Setup")
-	color.Yellow("Follow the prompts to configure your LLM providers.")
+	// Welcome message
+	color.Blue("═══════════════════════════════════════════════════════════")
+	color.Blue("  🤖 CCO Configuration Wizard")
+	color.Blue("═══════════════════════════════════════════════════════════")
+	fmt.Println()
+	color.Yellow("This wizard will help you set up your CCO configuration.")
+	color.Cyan("You can add one or more providers interactively.\n")
 
 	reader := bufio.NewReader(os.Stdin)
+	var providers []config.Provider
 
-	// Get provider details
-	fmt.Print("\nProvider Name (e.g., openrouter, openai): ")
+	// Show available providers
+	color.Green("Available providers:")
+	fmt.Println("  1. OpenRouter   - Access to multiple models (Claude, GPT, etc.)")
+	fmt.Println("  2. OpenAI       - GPT-4, GPT-3.5, and other OpenAI models")
+	fmt.Println("  3. Anthropic    - Claude models directly")
+	fmt.Println("  4. Ollama       - Local models (no API key needed)")
+	fmt.Println("  5. DeepSeek     - Coding-focused models")
+	fmt.Println("  6. Groq         - Ultra-fast inference")
+	fmt.Println("  7. NVIDIA       - Nemotron models")
+	fmt.Println("  8. Gemini       - Google's Gemini models")
+	fmt.Println("  9. Custom       - Your own provider")
+	fmt.Println()
 
-	providerName, err := reader.ReadString('\n')
-	if err != nil {
-		return fmt.Errorf("error reading provider name: %w", err)
+	addMore := true
+	for addMore {
+		// Get provider selection
+		fmt.Print("Select provider (1-9): ")
+		selection, err := reader.ReadString('\n')
+		if err != nil {
+			return fmt.Errorf("error reading selection: %w", err)
+		}
+		selection = strings.TrimSpace(selection)
+
+		provider := config.Provider{}
+
+		switch selection {
+		case "1":
+			provider = promptProviderDetails(reader, "openrouter", config.DefaultProviderURLs["openrouter"])
+		case "2":
+			provider = promptProviderDetails(reader, "openai", config.DefaultProviderURLs["openai"])
+		case "3":
+			provider = promptProviderDetails(reader, "anthropic", config.DefaultProviderURLs["anthropic"])
+		case "4":
+			provider = promptProviderDetails(reader, "ollama", config.DefaultProviderURLs["ollama"])
+		case "5":
+			provider = promptProviderDetails(reader, "deepseek", config.DefaultProviderURLs["deepseek"])
+		case "6":
+			provider = promptProviderDetails(reader, "groq", config.DefaultProviderURLs["groq"])
+		case "7":
+			provider = promptProviderDetails(reader, "nvidia", config.DefaultProviderURLs["nvidia"])
+		case "8":
+			provider = promptProviderDetails(reader, "gemini", config.DefaultProviderURLs["gemini"])
+		case "9":
+			provider = promptCustomProvider(reader)
+		default:
+			color.Red("Invalid selection. Please choose 1-9.")
+			continue
+		}
+
+		if provider.Name != "" {
+			providers = append(providers, provider)
+			color.Green("✓ Added provider: %s\n", provider.Name)
+		}
+
+		// Ask if user wants to add more
+		fmt.Print("Add another provider? (y/N): ")
+		response, err := reader.ReadString('\n')
+		if err != nil {
+			return fmt.Errorf("error reading response: %w", err)
+		}
+		response = strings.ToLower(strings.TrimSpace(response))
+		addMore = response == "y" || response == "yes"
 	}
 
-	providerName = strings.TrimSpace(providerName)
-
-	fmt.Print("API Key: ")
-
-	apiKey, err := reader.ReadString('\n')
-	if err != nil {
-		return fmt.Errorf("error reading API key: %w", err)
+	if len(providers) == 0 {
+		color.Yellow("No providers configured. Exiting.")
+		return nil
 	}
-
-	apiKey = strings.TrimSpace(apiKey)
-
-	fmt.Print("API Base URL: ")
-
-	baseURL, err := reader.ReadString('\n')
-	if err != nil {
-		return fmt.Errorf("error reading base URL: %w", err)
-	}
-
-	baseURL = strings.TrimSpace(baseURL)
-
-	fmt.Print("Default Model: ")
-
-	model, err := reader.ReadString('\n')
-	if err != nil {
-		return fmt.Errorf("error reading model: %w", err)
-	}
-
-	model = strings.TrimSpace(model)
 
 	// Optional router API key
-	fmt.Print("Router API Key (optional, for authentication): ")
-
+	fmt.Print("\nRouter API Key (optional, press Enter to skip): ")
 	routerAPIKey, err := reader.ReadString('\n')
 	if err != nil {
 		return fmt.Errorf("error reading router API key: %w", err)
 	}
 	routerAPIKey = strings.TrimSpace(routerAPIKey)
 
+	// Set default model
+	defaultModel := fmt.Sprintf("%s/%s", providers[0].Name, providers[0].DefaultModels[0])
+	fmt.Printf("\nDefault model (press Enter for %s): ", defaultModel)
+	customDefault, err := reader.ReadString('\n')
+	if err != nil {
+		return fmt.Errorf("error reading default model: %w", err)
+	}
+	customDefault = strings.TrimSpace(customDefault)
+	if customDefault != "" {
+		defaultModel = customDefault
+	}
+
 	// Create configuration
 	cfg := &config.Config{
-		Host:   config.DefaultHost,
-		Port:   config.DefaultPort,
-		APIKey: routerAPIKey,
-		Providers: []config.Provider{
-			{
-				Name:    providerName,
-				APIBase: baseURL,
-				APIKey:  apiKey,
-				Models:  []string{model},
-			},
-		},
+		Host:      config.DefaultHost,
+		Port:      config.DefaultPort,
+		APIKey:    routerAPIKey,
+		Providers: providers,
 		Router: config.RouterConfig{
-			Default: fmt.Sprintf("%s,%s", providerName, model),
+			Default: defaultModel,
 		},
+	}
+
+	// Apply defaults
+	cfgMgr.ApplyDefaults(cfg)
+
+	// Show summary
+	fmt.Println()
+	color.Blue("═══════════════════════════════════════════════════════════")
+	color.Blue("  Configuration Summary")
+	color.Blue("═══════════════════════════════════════════════════════════")
+	fmt.Printf("  Host: %s\n", cfg.Host)
+	fmt.Printf("  Port: %d\n", cfg.Port)
+	fmt.Printf("  Providers: %d\n", len(cfg.Providers))
+	for _, p := range cfg.Providers {
+		fmt.Printf("    - %s (%s)\n", p.Name, p.APIBase)
+	}
+	fmt.Printf("  Default Model: %s\n", cfg.Router.Default)
+	fmt.Println()
+
+	// Confirm save
+	fmt.Print("Save this configuration? (Y/n): ")
+	confirm, err := reader.ReadString('\n')
+	if err != nil {
+		return fmt.Errorf("error reading confirmation: %w", err)
+	}
+	confirm = strings.ToLower(strings.TrimSpace(confirm))
+
+	if confirm == "n" || confirm == "no" {
+		color.Yellow("Configuration not saved.")
+		return nil
 	}
 
 	// Save configuration
@@ -132,10 +204,109 @@ func runConfigInit(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("failed to save configuration: %w", err)
 	}
 
-	color.Green("Configuration saved successfully to: %s", cfgMgr.GetPath())
-	color.Cyan("You can now start the router with: cco start")
+	color.Green("\n✓ Configuration saved successfully!")
+	color.Cyan("\nNext steps:")
+	fmt.Println("  1. Run 'cco config show' to view your configuration")
+	fmt.Println("  2. Run 'cco start' to start the proxy server")
+	fmt.Println("  3. Run 'eval \"$(cco activate)\"' to set up shell environment")
 
 	return nil
+}
+
+func promptProviderDetails(reader *bufio.Reader, name, defaultURL string) config.Provider {
+	color.Cyan("\nConfiguring %s", strings.ToUpper(name))
+
+	// Get API key
+	var apiKey string
+	if name == "ollama" {
+		color.Yellow("Ollama doesn't require an API key (using 'ollama' as placeholder)")
+		apiKey = "ollama"
+	} else {
+		fmt.Printf("API Key for %s: ", name)
+		key, err := reader.ReadString('\n')
+		if err != nil {
+			color.Red("Error reading API key")
+			return config.Provider{}
+		}
+		apiKey = strings.TrimSpace(key)
+
+		if apiKey == "" {
+			color.Yellow("Skipping %s (no API key provided)", name)
+			return config.Provider{}
+		}
+	}
+
+	// Use default URL
+	fmt.Printf("API URL (press Enter for default: %s): ", defaultURL)
+	url, err := reader.ReadString('\n')
+	if err != nil {
+		color.Red("Error reading URL")
+		return config.Provider{}
+	}
+	url = strings.TrimSpace(url)
+	if url == "" {
+		url = defaultURL
+	}
+
+	return config.Provider{
+		Name:          name,
+		APIKey:        apiKey,
+		APIBase:       url,
+		DefaultModels: config.DefaultProviderModels[name],
+	}
+}
+
+func promptCustomProvider(reader *bufio.Reader) config.Provider {
+	color.Cyan("\nConfiguring Custom Provider")
+
+	fmt.Print("Provider Name: ")
+	name, err := reader.ReadString('\n')
+	if err != nil {
+		color.Red("Error reading provider name")
+		return config.Provider{}
+	}
+	name = strings.TrimSpace(name)
+
+	if name == "" {
+		color.Yellow("Skipping custom provider (no name provided)")
+		return config.Provider{}
+	}
+
+	fmt.Print("API Key: ")
+	apiKey, err := reader.ReadString('\n')
+	if err != nil {
+		color.Red("Error reading API key")
+		return config.Provider{}
+	}
+	apiKey = strings.TrimSpace(apiKey)
+
+	fmt.Print("API Base URL: ")
+	url, err := reader.ReadString('\n')
+	if err != nil {
+		color.Red("Error reading URL")
+		return config.Provider{}
+	}
+	url = strings.TrimSpace(url)
+
+	fmt.Print("Default Model (optional): ")
+	model, err := reader.ReadString('\n')
+	if err != nil {
+		color.Red("Error reading model")
+		return config.Provider{}
+	}
+	model = strings.TrimSpace(model)
+
+	var models []string
+	if model != "" {
+		models = []string{model}
+	}
+
+	return config.Provider{
+		Name:          name,
+		APIKey:        apiKey,
+		APIBase:       url,
+		DefaultModels: models,
+	}
 }
 
 func runConfigShow(cmd *cobra.Command, _ []string) error {
@@ -168,7 +339,7 @@ func runConfigShow(cmd *cobra.Command, _ []string) error {
 	for _, provider := range cfg.Providers {
 		fmt.Printf("  - Name: %s\n", provider.Name)
 		fmt.Printf("    URL: %s\n", provider.APIBase)
-		fmt.Printf("    API Key: %s\n", maskString(provider.APIKey))
+		fmt.Printf("    API Key: %s\n", maskString(provider.APIKey.(string)))
 
 		if len(provider.DefaultModels) > 0 {
 			fmt.Printf("    Default Models: %v\n", provider.DefaultModels)
@@ -288,12 +459,15 @@ func runConfigGenerate(cmd *cobra.Command, _ []string) error {
 	fmt.Println("3. Run 'cco config validate' to check your configuration")
 	fmt.Println("4. Start the router with 'cco start'")
 
-	color.Yellow("\nNote: The configuration includes all 5 supported providers:")
+	color.Yellow("\nNote: The configuration includes all 8 supported providers:")
 	fmt.Println("- OpenRouter (access to multiple models)")
 	fmt.Println("- OpenAI (GPT models)")
 	fmt.Println("- Anthropic (Claude models)")
 	fmt.Println("- Nvidia (Nemotron models)")
 	fmt.Println("- Google Gemini (Gemini models)")
+	fmt.Println("- Ollama (local models)")
+	fmt.Println("- DeepSeek (coding-focused models)")
+	fmt.Println("- Groq (ultra-fast inference)")
 
 	return nil
 }

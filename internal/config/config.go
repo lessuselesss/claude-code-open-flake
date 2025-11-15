@@ -26,6 +26,9 @@ var (
 		"anthropic":  "https://api.anthropic.com/v1/messages",
 		"nvidia":     "https://integrate.api.nvidia.com/v1/chat/completions",
 		"gemini":     "https://generativelanguage.googleapis.com/v1beta/models",
+		"ollama":     "http://localhost:11434/v1/chat/completions",
+		"deepseek":   "https://api.deepseek.com/v1/chat/completions",
+		"groq":       "https://api.groq.com/openai/v1/chat/completions",
 	}
 
 	// Default models for each provider
@@ -56,16 +59,52 @@ var (
 			"gemini-1.5-pro",
 			"gemini-1.5-flash",
 		},
+		"ollama": {
+			"llama3.2",
+			"llama3.1",
+			"codellama",
+			"mistral",
+			"qwen2.5-coder",
+		},
+		"deepseek": {
+			"deepseek-chat",
+			"deepseek-coder",
+			"deepseek-reasoner",
+		},
+		"groq": {
+			"llama-3.3-70b-versatile",
+			"llama-3.1-70b-versatile",
+			"llama-3.1-8b-instant",
+			"mixtral-8x7b-32768",
+			"gemma2-9b-it",
+		},
 	}
 )
 
 type Provider struct {
 	Name           string   `json:"name" yaml:"name"`
 	APIBase        string   `json:"api_base_url" yaml:"url,omitempty"`
-	APIKey         string   `json:"api_key" yaml:"api_key,omitempty"`
+	APIKey         any      `json:"api_key,omitempty" yaml:"api_key,omitempty"`
 	Models         []string `json:"models" yaml:"models,omitempty"`
 	ModelWhitelist []string `json:"model_whitelist,omitempty" yaml:"model_whitelist,omitempty"`
 	DefaultModels  []string `json:"default_models,omitempty" yaml:"default_models,omitempty"`
+
+	// Internal fields for round-robin
+	apiKeys  []string
+	keyIndex atomic.Uint32
+}
+
+// GetAPIKey returns an API key in a round-robin fashion.
+func (p *Provider) GetAPIKey() string {
+	if len(p.apiKeys) == 0 {
+		return ""
+	}
+	if len(p.apiKeys) == 1 {
+		return p.apiKeys[0]
+	}
+	// Atomically increment and get the index, then modulo for round-robin
+	idx := p.keyIndex.Add(1)
+	return p.apiKeys[int(idx-1)%len(p.apiKeys)]
 }
 
 type RouterConfig struct {
@@ -76,12 +115,21 @@ type RouterConfig struct {
 	WebSearch   string `json:"webSearch,omitempty" yaml:"web_search,omitempty"`
 }
 
+type PluginsConfig struct {
+	TokenCounter       bool   `json:"token_counter,omitempty" yaml:"token_counter,omitempty"`
+	SystemPrompt       string `json:"system_prompt,omitempty" yaml:"system_prompt,omitempty"`
+	ResponseFilterEnabled bool `json:"response_filter_enabled,omitempty" yaml:"response_filter_enabled,omitempty"`
+	FilterWords        []string `json:"filter_words,omitempty" yaml:"filter_words,omitempty"`
+	FilterReplacement  string `json:"filter_replacement,omitempty" yaml:"filter_replacement,omitempty"`
+}
+
 type Config struct {
 	Host      string       `json:"HOST,omitempty" yaml:"host,omitempty"`
 	Port      int          `json:"PORT,omitempty" yaml:"port,omitempty"`
 	APIKey    string       `json:"APIKEY,omitempty" yaml:"api_key,omitempty"`
 	Providers []Provider   `json:"Providers" yaml:"providers"`
 	Router    RouterConfig `json:"Router" yaml:"router,omitempty"`
+	Plugins   PluginsConfig `json:"Plugins,omitempty" yaml:"plugins,omitempty"`
 }
 
 type Manager struct {
@@ -105,11 +153,14 @@ func (m *Manager) createMinimalConfig() Config {
 		Host: DefaultHost,
 		Port: DefaultPort,
 		Providers: []Provider{
-			{Name: "openrouter"},
-			{Name: "openai"},
-			{Name: "anthropic"},
-			{Name: "nvidia"},
-			{Name: "gemini"},
+			{Name: "openrouter", APIBase: DefaultProviderURLs["openrouter"]},
+			{Name: "openai", APIBase: DefaultProviderURLs["openai"]},
+			{Name: "anthropic", APIBase: DefaultProviderURLs["anthropic"]},
+			{Name: "nvidia", APIBase: DefaultProviderURLs["nvidia"]},
+			{Name: "gemini", APIBase: DefaultProviderURLs["gemini"]},
+			{Name: "ollama", APIBase: DefaultProviderURLs["ollama"]},
+			{Name: "deepseek", APIBase: DefaultProviderURLs["deepseek"]},
+			{Name: "groq", APIBase: DefaultProviderURLs["groq"]},
 		},
 		Router: RouterConfig{
 			Default:     "openrouter,anthropic/claude-3.5-sonnet",
@@ -149,7 +200,7 @@ func (m *Manager) Load() (*Config, error) {
 	}
 
 	// Apply defaults and validation
-	m.applyDefaults(&cfg)
+	m.ApplyDefaults(&cfg)
 
 	m.configValue.Store(&cfg)
 
@@ -186,7 +237,7 @@ func (m *Manager) loadJSON() (Config, error) {
 	return cfg, nil
 }
 
-func (m *Manager) applyDefaults(cfg *Config) {
+func (m *Manager) ApplyDefaults(cfg *Config) {
 	// Set basic defaults
 	if cfg.Port == 0 {
 		cfg.Port = DefaultPort
@@ -204,6 +255,20 @@ func (m *Manager) applyDefaults(cfg *Config) {
 		if provider.APIBase == "" {
 			if defaultURL, exists := DefaultProviderURLs[provider.Name]; exists {
 				provider.APIBase = defaultURL
+			}
+		}
+
+		// Process API keys
+		switch v := provider.APIKey.(type) {
+		case string:
+			if v != "" {
+				provider.apiKeys = []string{v}
+			}
+		case []any:
+			for _, key := range v {
+				if keyStr, ok := key.(string); ok && keyStr != "" {
+					provider.apiKeys = append(provider.apiKeys, keyStr)
+				}
 			}
 		}
 
@@ -375,6 +440,18 @@ func (m *Manager) CreateExampleYAML() error {
 				Name:   "gemini",
 				APIKey: "your-gemini-api-key",
 			},
+			{
+				Name:   "ollama",
+				APIKey: "ollama", // Ollama doesn't require a real API key
+			},
+			{
+				Name:   "deepseek",
+				APIKey: "your-deepseek-api-key",
+			},
+			{
+				Name:   "groq",
+				APIKey: "your-groq-api-key",
+			},
 		},
 		Router: RouterConfig{
 			Default:     "openrouter/anthropic/claude-3.5-sonnet",
@@ -386,7 +463,7 @@ func (m *Manager) CreateExampleYAML() error {
 	}
 
 	// Apply defaults to populate URLs and default models
-	m.applyDefaults(cfg)
+	m.ApplyDefaults(cfg)
 
 	return m.SaveAsYAML(cfg)
 }

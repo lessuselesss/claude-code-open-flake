@@ -9,20 +9,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNvidiaProvider_BasicMethods(t *testing.T) {
-	cfg := &config.Config{Providers: []config.Provider{{Name: "nvidia", APIKey: "test-key"}}}
+func TestDeepSeekProvider_BasicMethods(t *testing.T) {
+	cfg := &config.Config{Providers: []config.Provider{{Name: "deepseek", APIKey: "test-key"}}}
 	cfgMgr := config.NewManager("")
 	cfgMgr.ApplyDefaults(cfg)
-	provider := NewNvidiaProvider(&cfg.Providers[0])
+	provider := NewDeepSeekProvider(&cfg.Providers[0])
 
-	assert.Equal(t, "nvidia", provider.Name())
+	assert.Equal(t, "deepseek", provider.Name())
 	assert.True(t, provider.SupportsStreaming())
-
 	assert.Equal(t, "test-key", provider.GetAPIKey())
 }
 
-func TestNvidiaProvider_IsStreaming(t *testing.T) {
-	provider := NewNvidiaProvider(&config.Provider{Name: "nvidia"})
+func TestDeepSeekProvider_IsStreaming(t *testing.T) {
+	provider := NewDeepSeekProvider(&config.Provider{Name: "deepseek"})
 
 	tests := []struct {
 		name     string
@@ -60,12 +59,12 @@ func TestNvidiaProvider_IsStreaming(t *testing.T) {
 	}
 }
 
-func TestNvidiaProvider_TransformRequest(t *testing.T) {
-	provider := NewNvidiaProvider(&config.Provider{Name: "nvidia"})
+func TestDeepSeekProvider_TransformRequest(t *testing.T) {
+	provider := NewDeepSeekProvider(&config.Provider{Name: "deepseek"})
 
-	// Test Anthropic to OpenAI/Nvidia request transformation
+	// Test Anthropic to DeepSeek (OpenAI-compatible) request transformation
 	anthropicRequest := map[string]any{
-		"model":      "nvidia/llama-3.1-nemotron-70b-instruct",
+		"model":      "deepseek-chat",
 		"system":     "You are a helpful assistant",
 		"max_tokens": 100,
 		"messages": []any{
@@ -99,13 +98,13 @@ func TestNvidiaProvider_TransformRequest(t *testing.T) {
 	result, err := provider.TransformRequest(anthropicJSON)
 	require.NoError(t, err)
 
-	var nvidiaReq map[string]any
-	err = json.Unmarshal(result, &nvidiaReq)
+	var deepseekReq map[string]any
+	err = json.Unmarshal(result, &deepseekReq)
 	require.NoError(t, err)
 
-	// Verify system message was moved to messages array (OpenAI format)
-	assert.NotContains(t, nvidiaReq, "system", "system field should be removed from root")
-	messages, ok := nvidiaReq["messages"].([]any)
+	// Verify system message was moved to messages array
+	assert.NotContains(t, deepseekReq, "system", "system field should be removed from root")
+	messages, ok := deepseekReq["messages"].([]any)
 	require.True(t, ok, "messages should be an array")
 	require.Len(t, messages, 2, "should have system + user message")
 
@@ -113,12 +112,15 @@ func TestNvidiaProvider_TransformRequest(t *testing.T) {
 	assert.Equal(t, "system", systemMsg["role"])
 	assert.Equal(t, "You are a helpful assistant", systemMsg["content"])
 
+	userMsg := messages[1].(map[string]any)
+	assert.Equal(t, "user", userMsg["role"])
+
 	// Verify max_tokens -> max_completion_tokens transformation
-	assert.NotContains(t, nvidiaReq, "max_tokens", "max_tokens should be converted")
-	assert.Equal(t, float64(100), nvidiaReq["max_completion_tokens"], "should have max_completion_tokens")
+	assert.NotContains(t, deepseekReq, "max_tokens", "max_tokens should be converted")
+	assert.Equal(t, float64(100), deepseekReq["max_completion_tokens"], "should have max_completion_tokens")
 
 	// Verify tools transformation to OpenAI format
-	tools, ok := nvidiaReq["tools"].([]any)
+	tools, ok := deepseekReq["tools"].([]any)
 	require.True(t, ok, "tools should be an array")
 	require.Len(t, tools, 1, "should have one tool")
 
@@ -126,20 +128,21 @@ func TestNvidiaProvider_TransformRequest(t *testing.T) {
 	assert.Equal(t, "function", tool["type"])
 	function := tool["function"].(map[string]any)
 	assert.Equal(t, "get_weather", function["name"])
+	assert.Equal(t, "Get current weather", function["description"])
 	assert.Contains(t, function, "parameters", "should have parameters not input_schema")
 
 	// Verify tool_choice is preserved
-	assert.Equal(t, "auto", nvidiaReq["tool_choice"])
+	assert.Equal(t, "auto", deepseekReq["tool_choice"])
 }
 
-func TestNvidiaProvider_Transform(t *testing.T) {
-	provider := NewNvidiaProvider(&config.Provider{Name: "nvidia"})
+func TestDeepSeekProvider_Transform(t *testing.T) {
+	provider := NewDeepSeekProvider(&config.Provider{Name: "deepseek"})
 
-	nvidiaResponse := map[string]any{
-		"id":      "chatcmpl-nvidia-123",
+	deepseekResponse := map[string]any{
+		"id":      "deepseek-123",
 		"object":  "chat.completion",
 		"created": 1677652288,
-		"model":   "nvidia/llama-3.1-nemotron-70b-instruct",
+		"model":   "deepseek-chat",
 		"choices": []map[string]any{
 			{
 				"index": 0,
@@ -157,10 +160,10 @@ func TestNvidiaProvider_Transform(t *testing.T) {
 		},
 	}
 
-	nvidiaJSON, err := json.Marshal(nvidiaResponse)
+	deepseekJSON, err := json.Marshal(deepseekResponse)
 	require.NoError(t, err)
 
-	result, err := provider.TransformResponse(nvidiaJSON)
+	result, err := provider.TransformResponse(deepseekJSON)
 	require.NoError(t, err)
 
 	var anthropicResp map[string]any
@@ -168,10 +171,10 @@ func TestNvidiaProvider_Transform(t *testing.T) {
 	require.NoError(t, err)
 
 	// Check basic structure
-	assert.Equal(t, "chatcmpl-nvidia-123", anthropicResp["id"])
+	assert.Equal(t, "deepseek-123", anthropicResp["id"])
 	assert.Equal(t, "message", anthropicResp["type"])
 	assert.Equal(t, "assistant", anthropicResp["role"])
-	assert.Equal(t, "nvidia/llama-3.1-nemotron-70b-instruct", anthropicResp["model"])
+	assert.Equal(t, "deepseek-chat", anthropicResp["model"])
 
 	// Check content
 	content, ok := anthropicResp["content"].([]any)
@@ -204,11 +207,11 @@ func TestNvidiaProvider_Transform(t *testing.T) {
 	}
 }
 
-func TestNvidiaProvider_ConvertStopReason(t *testing.T) {
-	provider := NewNvidiaProvider(&config.Provider{Name: "nvidia"})
+func TestDeepSeekProvider_ConvertStopReason(t *testing.T) {
+	provider := NewDeepSeekProvider(&config.Provider{Name: "deepseek"})
 
 	tests := []struct {
-		nvidiaReason      string
+		deepseekReason    string
 		expectedAnthropic string
 	}{
 		{"stop", "end_turn"},
@@ -221,21 +224,21 @@ func TestNvidiaProvider_ConvertStopReason(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.nvidiaReason, func(t *testing.T) {
-			result := provider.convertStopReason(tt.nvidiaReason)
+		t.Run(tt.deepseekReason, func(t *testing.T) {
+			result := provider.convertStopReason(tt.deepseekReason)
 			assert.Equal(t, tt.expectedAnthropic, *result)
 		})
 	}
 }
 
-func TestNvidiaProvider_ToolCallsTransform(t *testing.T) {
-	provider := NewNvidiaProvider(&config.Provider{Name: "nvidia"})
+func TestDeepSeekProvider_ToolCallsTransform(t *testing.T) {
+	provider := NewDeepSeekProvider(&config.Provider{Name: "deepseek"})
 
-	nvidiaResponse := map[string]any{
-		"id":      "chatcmpl-nvidia-123",
+	deepseekResponse := map[string]any{
+		"id":      "deepseek-123",
 		"object":  "chat.completion",
 		"created": 1677652288,
-		"model":   "nvidia/llama-3.1-nemotron-70b-instruct",
+		"model":   "deepseek-chat",
 		"choices": []map[string]any{
 			{
 				"index": 0,
@@ -244,7 +247,7 @@ func TestNvidiaProvider_ToolCallsTransform(t *testing.T) {
 					"content": nil,
 					"tool_calls": []map[string]any{
 						{
-							"id":   "call_nvidia123",
+							"id":   "call_abc123",
 							"type": "function",
 							"function": map[string]any{
 								"name":      "get_weather",
@@ -263,10 +266,10 @@ func TestNvidiaProvider_ToolCallsTransform(t *testing.T) {
 		},
 	}
 
-	nvidiaJSON, err := json.Marshal(nvidiaResponse)
+	deepseekJSON, err := json.Marshal(deepseekResponse)
 	require.NoError(t, err)
 
-	result, err := provider.TransformResponse(nvidiaJSON)
+	result, err := provider.TransformResponse(deepseekJSON)
 	require.NoError(t, err)
 
 	var anthropicResp map[string]any
@@ -284,9 +287,9 @@ func TestNvidiaProvider_ToolCallsTransform(t *testing.T) {
 	id, ok := toolBlock["id"]
 	require.True(t, ok)
 	if idPtr, isPtr := id.(*string); isPtr {
-		assert.Equal(t, "toolu_nvidia123", *idPtr)
+		assert.Equal(t, "toolu_abc123", *idPtr)
 	} else {
-		assert.Equal(t, "toolu_nvidia123", id.(string))
+		assert.Equal(t, "toolu_abc123", id.(string))
 	}
 
 	name, ok := toolBlock["name"]
@@ -313,8 +316,8 @@ func TestNvidiaProvider_ToolCallsTransform(t *testing.T) {
 	}
 }
 
-func TestNvidiaProvider_ErrorHandling(t *testing.T) {
-	provider := NewNvidiaProvider(&config.Provider{Name: "nvidia"})
+func TestDeepSeekProvider_ErrorHandling(t *testing.T) {
+	provider := NewDeepSeekProvider(&config.Provider{Name: "deepseek"})
 
 	errorResponse := map[string]any{
 		"error": map[string]any{
@@ -342,14 +345,14 @@ func TestNvidiaProvider_ErrorHandling(t *testing.T) {
 	assert.Equal(t, "Invalid API key", errorInfo["message"])
 }
 
-func TestNvidiaProvider_TransformStream(t *testing.T) {
-	provider := NewNvidiaProvider(&config.Provider{Name: "nvidia"})
+func TestDeepSeekProvider_TransformStream(t *testing.T) {
+	provider := NewDeepSeekProvider(&config.Provider{Name: "deepseek"})
 	state := &StreamState{}
 
 	// Test message start chunk
 	messageStartChunk := map[string]any{
-		"id":    "chatcmpl-nvidia-123",
-		"model": "nvidia/llama-3.1-nemotron-70b-instruct",
+		"id":    "deepseek-123",
+		"model": "deepseek-chat",
 		"choices": []map[string]any{
 			{
 				"index": 0,
@@ -369,13 +372,13 @@ func TestNvidiaProvider_TransformStream(t *testing.T) {
 	// Should generate message_start event
 	eventStr := string(events)
 	assert.Contains(t, eventStr, "event: message_start")
-	assert.Contains(t, eventStr, "chatcmpl-nvidia-123")
+	assert.Contains(t, eventStr, "deepseek-123")
 	assert.True(t, state.MessageStartSent)
 
 	// Test text content chunk
 	textChunk := map[string]any{
-		"id":    "chatcmpl-nvidia-123",
-		"model": "nvidia/llama-3.1-nemotron-70b-instruct",
+		"id":    "deepseek-123",
+		"model": "deepseek-chat",
 		"choices": []map[string]any{
 			{
 				"index": 0,
@@ -399,8 +402,8 @@ func TestNvidiaProvider_TransformStream(t *testing.T) {
 
 	// Test finish chunk
 	finishChunk := map[string]any{
-		"id":    "chatcmpl-nvidia-123",
-		"model": "nvidia/llama-3.1-nemotron-70b-instruct",
+		"id":    "deepseek-123",
+		"model": "deepseek-chat",
 		"choices": []map[string]any{
 			{
 				"index":         0,
@@ -426,14 +429,14 @@ func TestNvidiaProvider_TransformStream(t *testing.T) {
 	assert.Contains(t, eventStr, "end_turn")
 }
 
-func TestNvidiaProvider_StreamingToolCalls(t *testing.T) {
-	provider := NewNvidiaProvider(&config.Provider{Name: "nvidia"})
+func TestDeepSeekProvider_StreamingToolCalls(t *testing.T) {
+	provider := NewDeepSeekProvider(&config.Provider{Name: "deepseek"})
 	state := &StreamState{}
 
 	// First chunk with tool call start
 	toolCallStartChunk := map[string]any{
-		"id":    "chatcmpl-nvidia-123",
-		"model": "nvidia/llama-3.1-nemotron-70b-instruct",
+		"id":    "deepseek-123",
+		"model": "deepseek-chat",
 		"choices": []map[string]any{
 			{
 				"index": 0,
@@ -441,7 +444,7 @@ func TestNvidiaProvider_StreamingToolCalls(t *testing.T) {
 					"tool_calls": []map[string]any{
 						{
 							"index": 0,
-							"id":    "call_nvidia123",
+							"id":    "call_abc123",
 							"type":  "function",
 							"function": map[string]any{
 								"name":      "ls",
@@ -462,13 +465,13 @@ func TestNvidiaProvider_StreamingToolCalls(t *testing.T) {
 
 	eventStr := string(events)
 	assert.Contains(t, eventStr, "event: content_block_start")
-	assert.Contains(t, eventStr, "toolu_nvidia123")
+	assert.Contains(t, eventStr, "toolu_abc123")
 	assert.Contains(t, eventStr, "tool_use")
 
 	// Second chunk with arguments
 	toolCallArgsChunk := map[string]any{
-		"id":    "chatcmpl-nvidia-123",
-		"model": "nvidia/llama-3.1-nemotron-70b-instruct",
+		"id":    "deepseek-123",
+		"model": "deepseek-chat",
 		"choices": []map[string]any{
 			{
 				"index": 0,
@@ -498,8 +501,8 @@ func TestNvidiaProvider_StreamingToolCalls(t *testing.T) {
 	assert.Contains(t, eventStr, "/home")
 }
 
-func TestNvidiaProvider_ConvertUsage(t *testing.T) {
-	provider := NewNvidiaProvider(&config.Provider{Name: "nvidia"})
+func TestDeepSeekProvider_ConvertUsage(t *testing.T) {
+	provider := NewDeepSeekProvider(&config.Provider{Name: "deepseek"})
 
 	usage := map[string]any{
 		"prompt_tokens":     100,
@@ -519,15 +522,15 @@ func TestNvidiaProvider_ConvertUsage(t *testing.T) {
 	assert.Equal(t, 10, result["cache_creation_input_tokens"])
 }
 
-func TestNvidiaProvider_ConvertToolCallID(t *testing.T) {
-	provider := NewNvidiaProvider(&config.Provider{Name: "nvidia"})
+func TestDeepSeekProvider_ConvertToolCallID(t *testing.T) {
+	provider := NewDeepSeekProvider(&config.Provider{Name: "deepseek"})
 
 	tests := []struct {
 		input    string
 		expected string
 	}{
-		{"call_nvidia123", "toolu_nvidia123"},
-		{"toolu_nvidia123", "toolu_nvidia123"},
+		{"call_abc123", "toolu_abc123"},
+		{"toolu_abc123", "toolu_abc123"},
 		{"xyz789", "toolu_xyz789"},
 	}
 
@@ -535,32 +538,6 @@ func TestNvidiaProvider_ConvertToolCallID(t *testing.T) {
 		t.Run(tt.input, func(t *testing.T) {
 			result := provider.convertToolCallID(tt.input)
 			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
-func TestNvidiaProvider_MapNvidiaErrorType(t *testing.T) {
-	provider := NewNvidiaProvider(&config.Provider{Name: "nvidia"})
-
-	tests := []struct {
-		nvidiaType        string
-		expectedAnthropic string
-	}{
-		{"invalid_request_error", "invalid_request_error"},
-		{"authentication_error", "authentication_error"},
-		{"permission_error", "permission_error"},
-		{"not_found_error", "not_found_error"},
-		{"rate_limit_error", "rate_limit_error"},
-		{"api_error", "api_error"},
-		{"overloaded_error", "overloaded_error"},
-		{"insufficient_quota_error", "billing_error"},
-		{"unknown_error", "api_error"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.nvidiaType, func(t *testing.T) {
-			result := provider.mapNvidiaErrorType(tt.nvidiaType)
-			assert.Equal(t, tt.expectedAnthropic, result)
 		})
 	}
 }

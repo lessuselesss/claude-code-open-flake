@@ -24,12 +24,15 @@ As simple as `CCO_API_KEY="<openrouter key>" cco code` and then selecting `openr
 <tr>
 <td width="50%">
 
-### 🌐 Multi-Provider Support
+### 🌐 Multi-Provider Support (8 providers!)
 - **OpenRouter** - Multiple models from different providers
 - **OpenAI** - Direct GPT model access
 - **Anthropic** - Native Claude model support
 - **NVIDIA** - Nemotron models via API
 - **Google Gemini** - Gemini model family
+- **Ollama** - Local models (llama, mistral, codellama, etc.)
+- **DeepSeek** - Coding-focused models (deepseek-coder, deepseek-reasoner)
+- **Groq** - Ultra-fast inference (Llama, Mixtral, Gemma)
 
 ### ⚡ Zero-Config Setup
 - Run with just `CCO_API_KEY` environment variable
@@ -178,7 +181,7 @@ For advanced setups with multiple API keys, generate a complete YAML configurati
 cco config generate  # or claude-code-open config generate
 ```
 
-This creates `config.yaml` with all 5 supported providers and sensible defaults. Then edit the file to add your API keys:
+This creates `config.yaml` with all 8 supported providers and sensible defaults. Then edit the file to add your API keys:
 
 ```yaml
 # config.yaml
@@ -242,6 +245,179 @@ claude-code-open stop
 </td>
 </tr>
 </table>
+
+## 🏠 Using Ollama (Local Models)
+
+Ollama allows you to run models locally on your machine. Here's how to get started:
+
+### 📦 Install Ollama
+
+```bash
+# macOS/Linux
+curl -fsSL https://ollama.com/install.sh | sh
+
+# Or visit https://ollama.com for other installation methods
+```
+
+### 🚀 Pull and Run Models
+
+```bash
+# Pull a model (e.g., Llama 3.2)
+ollama pull llama3.2
+
+# Or pull a coding model
+ollama pull qwen2.5-coder
+
+# List available models
+ollama list
+
+# Ollama server runs automatically on http://localhost:11434
+```
+
+### 💬 Use with Claude Code Open
+
+Once Ollama is running, use it with CCO:
+
+```bash
+# Start CCO (Ollama will be auto-configured)
+cco start
+
+# Use Ollama models in Claude Code
+# Select model: ollama,llama3.2
+# Or: ollama,qwen2.5-coder
+# Or: ollama,codellama
+```
+
+### 🎯 Example Models
+
+<table>
+<tr>
+<td width="50%">
+
+**💻 Coding Models**
+- `qwen2.5-coder` - Excellent for code
+- `codellama` - Meta's CodeLlama
+- `deepseek-coder` - DeepSeek specialized
+
+</td>
+<td width="50%">
+
+**🧠 General Models**
+- `llama3.2` - Latest Llama
+- `llama3.1` - Llama 3.1
+- `mistral` - Mistral models
+
+</td>
+</tr>
+</table>
+
+> **💡 Tip**: Ollama models run completely offline and are free! Perfect for privacy-sensitive work or when you don't have API credits.
+
+## 💻 Using DeepSeek (Coding Models)
+
+DeepSeek provides powerful AI models specialized for coding tasks at competitive pricing.
+
+### 🔑 Get API Key
+
+1. Visit [DeepSeek Platform](https://platform.deepseek.com/)
+2. Sign up or log in
+3. Navigate to API Keys section
+4. Create a new API key
+
+### 🚀 Use with CCO
+
+```bash
+# Add to your config or use CCO_API_KEY
+export CCO_API_KEY="your-deepseek-api-key"
+cco start
+
+# Use DeepSeek models in Claude Code
+# Select model: deepseek,deepseek-chat
+# Or: deepseek,deepseek-coder
+# Or: deepseek,deepseek-reasoner
+```
+
+### 🎯 Available Models
+
+<table>
+<tr>
+<td width="50%">
+
+**💬 deepseek-chat**
+- General purpose conversation
+- Strong reasoning capabilities
+- Cost-effective for most tasks
+
+</td>
+<td width="50%">
+
+**💻 deepseek-coder**
+- Specialized for coding
+- Excellent code generation
+- Supports many languages
+
+</td>
+</tr>
+<tr>
+<td colspan="2">
+
+**🧠 deepseek-reasoner**
+- Advanced reasoning mode
+- Chain-of-thought responses
+- Best for complex problems
+
+</td>
+</tr>
+</table>
+
+## ⚡ Using Groq (Ultra-Fast Inference)
+
+Groq provides blazing-fast inference for open source models using custom LPU hardware.
+
+### 🔑 Get API Key
+
+1. Visit [Groq Console](https://console.groq.com/)
+2. Sign up with GitHub or email
+3. Navigate to API Keys
+4. Create a new API key
+
+### 🚀 Use with CCO
+
+```bash
+# Add to your config or use CCO_API_KEY
+export CCO_API_KEY="your-groq-api-key"
+cco start
+
+# Use Groq models in Claude Code
+# Select model: groq,llama-3.3-70b-versatile
+# Or: groq,llama-3.1-8b-instant
+# Or: groq,mixtral-8x7b-32768
+```
+
+### 🎯 Available Models
+
+<table>
+<tr>
+<td width="50%">
+
+**🦙 Llama Models**
+- `llama-3.3-70b-versatile` - Largest, most capable
+- `llama-3.1-70b-versatile` - Balanced performance
+- `llama-3.1-8b-instant` - Fastest responses
+
+</td>
+<td width="50%">
+
+**⚡ Other Models**
+- `mixtral-8x7b-32768` - Mixture of Experts
+- `gemma2-9b-it` - Google's Gemma
+- All with ultra-low latency!
+
+</td>
+</tr>
+</table>
+
+> **⚡ Speed**: Groq delivers responses up to 10x faster than traditional cloud providers thanks to specialized LPU hardware!
 
 ## 🔄 Dynamic Model Selection
 
@@ -364,6 +540,22 @@ providers:
   # Google Gemini
   - name: gemini
     api_key: your-gemini-api-key
+
+  # Ollama - Local models (no real API key needed)
+  - name: ollama
+    api_key: ollama  # Placeholder - Ollama doesn't validate API keys
+    # url: http://localhost:11434/v1/chat/completions (default)
+    # Automatically configured with llama3.2, codellama, mistral, etc.
+
+  # DeepSeek - Coding-focused models
+  - name: deepseek
+    api_key: your-deepseek-api-key
+    # Automatically configured with deepseek-chat, deepseek-coder, etc.
+
+  # Groq - Ultra-fast inference
+  - name: groq
+    api_key: your-groq-api-key
+    # Automatically configured with llama-3.3-70b, mixtral, gemma2, etc.
 
 # Router configuration for different use cases
 router:
@@ -517,6 +709,112 @@ cco config validate
 </td>
 </tr>
 </table>
+
+### 📦 Plugins & Transformers
+
+CCO supports a powerful plugin system for transforming requests and responses:
+
+<table>
+<tr>
+<td width="50%">
+
+**📋 List Plugins**
+```bash
+cco plugins list
+```
+
+Shows all available plugins and their status.
+
+</td>
+<td width="50%">
+
+**⚙️ Enable/Disable**
+```bash
+cco plugins enable token-counter
+cco plugins disable response-filter
+```
+
+Toggle plugins on/off.
+
+</td>
+</tr>
+</table>
+
+**Built-in Plugins:**
+
+- **token-counter** - Tracks and logs token usage for every request/response
+- **system-prompt-injector** - Inject a custom system prompt into all requests
+- **response-filter** - Filter sensitive content from responses using word lists
+
+**Configuration Example:**
+
+```yaml
+plugins:
+  token_counter: true
+  system_prompt: "You are a helpful coding assistant specialized in Go..."
+  response_filter_enabled: false
+  filter_words:
+    - "sensitive-word"
+    - "api-key"
+  filter_replacement: "[FILTERED]"
+```
+
+### 🎨 Interactive Tools
+
+<table>
+<tr>
+<td width="50%">
+
+**🤖 Model Browser**
+```bash
+# Interactive TUI for browsing models
+cco models
+
+# List all models (plain text)
+cco models list
+
+# Filter by provider
+cco models list --provider=ollama
+```
+
+</td>
+<td width="50%">
+
+**🔧 Shell Activation**
+```bash
+# Bash/Zsh
+eval "$(cco activate)"
+
+# Fish
+cco activate --fish | source
+```
+
+Sets up convenient aliases:
+- `cco-model` - Quick model selection
+- `cco-key` - Set API key
+- `cco-env` - Show environment
+- `cco-start`, `cco-stop`, etc.
+
+</td>
+</tr>
+</table>
+
+### 🎨 Web UI Dashboard
+
+Launch a beautiful web-based dashboard to manage CCO:
+
+```bash
+cco ui              # Start dashboard on http://localhost:6971
+cco ui --port 8080  # Custom port
+```
+
+**Features:**
+- 📊 Real-time request statistics and token usage
+- 📡 Provider status and configuration overview
+- 🔍 Recent request monitoring with details
+- ⏱️ Uptime and performance metrics
+- 🎯 Interactive provider cards with model counts
+- 📈 Token usage by model breakdown
 
 ### 💬 Claude Code Integration
 
@@ -902,18 +1200,98 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 ## 📈 Changelog
 
 <details>
-<summary><b>🎯 v0.3.0 - Latest Release</b></summary>
+<summary><b>🎯 v0.7.0 - Latest Release</b></summary>
 
 <br>
 
-✨ **New Providers** - Added Nvidia and Google Gemini support (5 total providers)  
-📄 **YAML Configuration** - Modern YAML config with automatic defaults  
-🔍 **Model Whitelisting** - Filter available models per provider using patterns  
-🔐 **API Key Protection** - Optional proxy-level authentication  
-💻 **Enhanced CLI** - New `cco config generate` command  
-🧪 **Comprehensive Testing** - 100% test coverage for all providers  
-📋 **Default Model Management** - Auto-populated curated model lists  
-🔄 **Streaming Tool Calls** - Fixed complex streaming parameter issues  
+✨ **Web UI Dashboard** - Beautiful web-based management interface
+📊 **Real-time Statistics** - Live request and token usage tracking
+📡 **Provider Overview** - Visual status cards for all 8 providers
+🔍 **Request Monitoring** - View recent requests with full details
+⏱️ **Performance Metrics** - Uptime and duration tracking
+🎨 **Responsive Design** - Modern gradient UI with auto-refresh
+🔌 **REST API** - JSON endpoints for all dashboard data
+📈 **Usage Analytics** - Token usage breakdown by model
+🚀 **Quick Launch** - Single command `cco ui` to start dashboard
+📍 **Embedded Assets** - Zero external dependencies using Go embed
+
+**Phase 4 Web UI Complete!** CCO now includes a production-ready web dashboard
+for monitoring and managing your LLM proxy with real-time insights.
+
+</details>
+
+<details>
+<summary><b>📦 v0.6.0 - Plugin System</b></summary>
+
+<br>
+
+✨ **Plugin System** - Extensible request/response transformation architecture
+📦 **Built-in Transformers** - Token counter, system prompt injector, content filter
+⚙️ **Plugin Management** - `cco plugins` command for listing and toggling plugins
+🔧 **Configurable Plugins** - YAML configuration for all plugin settings
+🎯 **Priority-based Execution** - Plugins run in defined order for predictable behavior
+📊 **Metadata Hooks** - Inspect and log request/response metadata
+🔄 **Stream Support** - Transform streaming responses chunk-by-chunk
+🧩 **Extensible Design** - Clean interfaces for custom plugin development
+📖 **Comprehensive Docs** - Plugin architecture and usage examples
+
+**Phase 3 Plugin System Complete!** CCO now supports extensible transformation plugins.
+
+</details>
+
+<details>
+<summary><b>📦 v0.5.0 - Enhanced CLI</b></summary>
+
+<br>
+
+✨ **Interactive Model Browser** - Beautiful TUI for browsing and selecting models
+🐚 **Shell Activation** - Convenient `eval "$(cco activate)"` for aliases and functions
+🧙 **Enhanced Config Wizard** - Improved `cco config init` with provider templates
+📋 **Model Listing** - Quick `cco models list` command with filtering
+⚡ **Better UX** - Streamlined configuration workflow
+🎨 **Bubbletea TUI** - Modern terminal user interface components
+🔧 **Shell Functions** - `cco-model`, `cco-key`, `cco-env` convenience functions
+💻 **Multi-Shell Support** - Works with bash, zsh, and fish shells
+📖 **Improved Documentation** - Comprehensive Phase 2 feature guides
+
+**Phase 2 Enhanced CLI Complete!** CCO now offers an exceptional developer experience.
+
+</details>
+
+<details>
+<summary><b>📦 v0.4.0 - Provider Expansion</b></summary>
+
+<br>
+
+✨ **New Providers** - Added Ollama, DeepSeek, and Groq (8 total providers - matches CCR!)
+🏠 **Local Model Support** - Run models completely offline with Ollama
+💻 **Coding Specialists** - DeepSeek models optimized for code generation
+⚡ **Ultra-Fast Inference** - Groq's LPU hardware for 10x faster responses
+📄 **YAML Configuration** - Modern YAML config with automatic defaults
+🔍 **Model Whitelisting** - Filter available models per provider using patterns
+🔐 **API Key Protection** - Optional proxy-level authentication
+💻 **Enhanced CLI** - New `cco config generate` command
+🧪 **Comprehensive Testing** - 100% test coverage for all providers
+📋 **Default Model Management** - Auto-populated curated model lists
+🔄 **Streaming Tool Calls** - Fixed complex streaming parameter issues
+
+**Phase 1 Provider Parity Complete!** CCO now matches claude-code-router's provider count.
+
+</details>
+
+<details>
+<summary><b>📦 v0.3.0 - Provider Expansion</b></summary>
+
+<br>
+
+✨ **New Providers** - Added Nvidia and Google Gemini (5 total providers)
+📄 **YAML Configuration** - Modern YAML config with automatic defaults
+🔍 **Model Whitelisting** - Filter available models per provider using patterns
+🔐 **API Key Protection** - Optional proxy-level authentication
+💻 **Enhanced CLI** - New `cco config generate` command
+🧪 **Comprehensive Testing** - 100% test coverage for all providers
+📋 **Default Model Management** - Auto-populated curated model lists
+🔄 **Streaming Tool Calls** - Fixed complex streaming parameter issues
 
 </details>
 

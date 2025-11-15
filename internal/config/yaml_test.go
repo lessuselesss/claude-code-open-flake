@@ -163,8 +163,8 @@ func TestManager_CreateExampleYAML(t *testing.T) {
 	assert.Equal(t, DefaultPort, cfg.Port)
 	assert.Equal(t, "your-proxy-api-key-here", cfg.APIKey)
 
-	// Should have all 5 providers
-	assert.Len(t, cfg.Providers, 5)
+	// Should have all 8 providers
+	assert.Len(t, cfg.Providers, 8)
 
 	providerNames := make([]string, len(cfg.Providers))
 	for i, p := range cfg.Providers {
@@ -177,8 +177,11 @@ func TestManager_CreateExampleYAML(t *testing.T) {
 	assert.Contains(t, providerNames, "openrouter")
 	assert.Contains(t, providerNames, "openai")
 	assert.Contains(t, providerNames, "anthropic")
+	assert.Contains(t, providerNames, "ollama")
 	assert.Contains(t, providerNames, "nvidia")
 	assert.Contains(t, providerNames, "gemini")
+	assert.Contains(t, providerNames, "deepseek")
+	assert.Contains(t, providerNames, "groq")
 
 	// Router should be configured
 	assert.NotEmpty(t, cfg.Router.Default)
