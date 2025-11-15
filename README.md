@@ -799,6 +799,23 @@ Sets up convenient aliases:
 </tr>
 </table>
 
+### 🎨 Web UI Dashboard
+
+Launch a beautiful web-based dashboard to manage CCO:
+
+```bash
+cco ui              # Start dashboard on http://localhost:6971
+cco ui --port 8080  # Custom port
+```
+
+**Features:**
+- 📊 Real-time request statistics and token usage
+- 📡 Provider status and configuration overview
+- 🔍 Recent request monitoring with details
+- ⏱️ Uptime and performance metrics
+- 🎯 Interactive provider cards with model counts
+- 📈 Token usage by model breakdown
+
 ### 💬 Claude Code Integration
 
 ```bash
@@ -1183,7 +1200,28 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 ## 📈 Changelog
 
 <details>
-<summary><b>🎯 v0.6.0 - Latest Release</b></summary>
+<summary><b>🎯 v0.7.0 - Latest Release</b></summary>
+
+<br>
+
+✨ **Web UI Dashboard** - Beautiful web-based management interface
+📊 **Real-time Statistics** - Live request and token usage tracking
+📡 **Provider Overview** - Visual status cards for all 8 providers
+🔍 **Request Monitoring** - View recent requests with full details
+⏱️ **Performance Metrics** - Uptime and duration tracking
+🎨 **Responsive Design** - Modern gradient UI with auto-refresh
+🔌 **REST API** - JSON endpoints for all dashboard data
+📈 **Usage Analytics** - Token usage breakdown by model
+🚀 **Quick Launch** - Single command `cco ui` to start dashboard
+📍 **Embedded Assets** - Zero external dependencies using Go embed
+
+**Phase 4 Web UI Complete!** CCO now includes a production-ready web dashboard
+for monitoring and managing your LLM proxy with real-time insights.
+
+</details>
+
+<details>
+<summary><b>📦 v0.6.0 - Plugin System</b></summary>
 
 <br>
 
