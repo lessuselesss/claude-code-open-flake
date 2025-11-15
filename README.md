@@ -710,6 +710,55 @@ cco config validate
 </tr>
 </table>
 
+### 📦 Plugins & Transformers
+
+CCO supports a powerful plugin system for transforming requests and responses:
+
+<table>
+<tr>
+<td width="50%">
+
+**📋 List Plugins**
+```bash
+cco plugins list
+```
+
+Shows all available plugins and their status.
+
+</td>
+<td width="50%">
+
+**⚙️ Enable/Disable**
+```bash
+cco plugins enable token-counter
+cco plugins disable response-filter
+```
+
+Toggle plugins on/off.
+
+</td>
+</tr>
+</table>
+
+**Built-in Plugins:**
+
+- **token-counter** - Tracks and logs token usage for every request/response
+- **system-prompt-injector** - Inject a custom system prompt into all requests
+- **response-filter** - Filter sensitive content from responses using word lists
+
+**Configuration Example:**
+
+```yaml
+plugins:
+  token_counter: true
+  system_prompt: "You are a helpful coding assistant specialized in Go..."
+  response_filter_enabled: false
+  filter_words:
+    - "sensitive-word"
+    - "api-key"
+  filter_replacement: "[FILTERED]"
+```
+
 ### 🎨 Interactive Tools
 
 <table>
@@ -1134,7 +1183,26 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 ## 📈 Changelog
 
 <details>
-<summary><b>🎯 v0.5.0 - Latest Release</b></summary>
+<summary><b>🎯 v0.6.0 - Latest Release</b></summary>
+
+<br>
+
+✨ **Plugin System** - Extensible request/response transformation architecture
+📦 **Built-in Transformers** - Token counter, system prompt injector, content filter
+⚙️ **Plugin Management** - `cco plugins` command for listing and toggling plugins
+🔧 **Configurable Plugins** - YAML configuration for all plugin settings
+🎯 **Priority-based Execution** - Plugins run in defined order for predictable behavior
+📊 **Metadata Hooks** - Inspect and log request/response metadata
+🔄 **Stream Support** - Transform streaming responses chunk-by-chunk
+🧩 **Extensible Design** - Clean interfaces for custom plugin development
+📖 **Comprehensive Docs** - Plugin architecture and usage examples
+
+**Phase 3 Plugin System Complete!** CCO now supports extensible transformation plugins.
+
+</details>
+
+<details>
+<summary><b>📦 v0.5.0 - Enhanced CLI</b></summary>
 
 <br>
 

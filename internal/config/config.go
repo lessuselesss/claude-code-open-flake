@@ -115,12 +115,21 @@ type RouterConfig struct {
 	WebSearch   string `json:"webSearch,omitempty" yaml:"web_search,omitempty"`
 }
 
+type PluginsConfig struct {
+	TokenCounter       bool   `json:"token_counter,omitempty" yaml:"token_counter,omitempty"`
+	SystemPrompt       string `json:"system_prompt,omitempty" yaml:"system_prompt,omitempty"`
+	ResponseFilterEnabled bool `json:"response_filter_enabled,omitempty" yaml:"response_filter_enabled,omitempty"`
+	FilterWords        []string `json:"filter_words,omitempty" yaml:"filter_words,omitempty"`
+	FilterReplacement  string `json:"filter_replacement,omitempty" yaml:"filter_replacement,omitempty"`
+}
+
 type Config struct {
 	Host      string       `json:"HOST,omitempty" yaml:"host,omitempty"`
 	Port      int          `json:"PORT,omitempty" yaml:"port,omitempty"`
 	APIKey    string       `json:"APIKEY,omitempty" yaml:"api_key,omitempty"`
 	Providers []Provider   `json:"Providers" yaml:"providers"`
 	Router    RouterConfig `json:"Router" yaml:"router,omitempty"`
+	Plugins   PluginsConfig `json:"Plugins,omitempty" yaml:"plugins,omitempty"`
 }
 
 type Manager struct {
