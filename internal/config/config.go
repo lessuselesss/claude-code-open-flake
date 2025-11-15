@@ -28,6 +28,7 @@ var (
 		"gemini":     "https://generativelanguage.googleapis.com/v1beta/models",
 		"ollama":     "http://localhost:11434/v1/chat/completions",
 		"deepseek":   "https://api.deepseek.com/v1/chat/completions",
+		"groq":       "https://api.groq.com/openai/v1/chat/completions",
 	}
 
 	// Default models for each provider
@@ -69,6 +70,13 @@ var (
 			"deepseek-chat",
 			"deepseek-coder",
 			"deepseek-reasoner",
+		},
+		"groq": {
+			"llama-3.3-70b-versatile",
+			"llama-3.1-70b-versatile",
+			"llama-3.1-8b-instant",
+			"mixtral-8x7b-32768",
+			"gemma2-9b-it",
 		},
 	}
 )
@@ -143,6 +151,7 @@ func (m *Manager) createMinimalConfig() Config {
 			{Name: "gemini", APIBase: DefaultProviderURLs["gemini"]},
 			{Name: "ollama", APIBase: DefaultProviderURLs["ollama"]},
 			{Name: "deepseek", APIBase: DefaultProviderURLs["deepseek"]},
+			{Name: "groq", APIBase: DefaultProviderURLs["groq"]},
 		},
 		Router: RouterConfig{
 			Default:     "openrouter,anthropic/claude-3.5-sonnet",
@@ -429,6 +438,10 @@ func (m *Manager) CreateExampleYAML() error {
 			{
 				Name:   "deepseek",
 				APIKey: "your-deepseek-api-key",
+			},
+			{
+				Name:   "groq",
+				APIKey: "your-groq-api-key",
 			},
 		},
 		Router: RouterConfig{

@@ -89,6 +89,8 @@ func (r *Registry) GetByDomain(apiBase string) (Provider, error) {
 		"127.0.0.1":                         "ollama",
 		"api.deepseek.com":                  "deepseek",
 		"deepseek.com":                      "deepseek",
+		"api.groq.com":                      "groq",
+		"groq.com":                          "groq",
 	}
 
 	if providerName, exists := domainProviderMap[domain]; exists {
@@ -129,6 +131,8 @@ func (r *Registry) Initialize(cfgProviders []config.Provider) {
 			r.Register(NewOllamaProvider(cfgProvider))
 		case "deepseek":
 			r.Register(NewDeepSeekProvider(cfgProvider))
+		case "groq":
+			r.Register(NewGroqProvider(cfgProvider))
 		}
 	}
 }
