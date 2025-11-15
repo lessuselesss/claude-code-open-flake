@@ -24,13 +24,15 @@ As simple as `CCO_API_KEY="<openrouter key>" cco code` and then selecting `openr
 <tr>
 <td width="50%">
 
-### 🌐 Multi-Provider Support
+### 🌐 Multi-Provider Support (8 providers!)
 - **OpenRouter** - Multiple models from different providers
 - **OpenAI** - Direct GPT model access
 - **Anthropic** - Native Claude model support
 - **NVIDIA** - Nemotron models via API
 - **Google Gemini** - Gemini model family
 - **Ollama** - Local models (llama, mistral, codellama, etc.)
+- **DeepSeek** - Coding-focused models (deepseek-coder, deepseek-reasoner)
+- **Groq** - Ultra-fast inference (Llama, Mixtral, Gemma)
 
 ### ⚡ Zero-Config Setup
 - Run with just `CCO_API_KEY` environment variable
@@ -179,7 +181,7 @@ For advanced setups with multiple API keys, generate a complete YAML configurati
 cco config generate  # or claude-code-open config generate
 ```
 
-This creates `config.yaml` with all 6 supported providers and sensible defaults. Then edit the file to add your API keys:
+This creates `config.yaml` with all 8 supported providers and sensible defaults. Then edit the file to add your API keys:
 
 ```yaml
 # config.yaml
@@ -311,6 +313,112 @@ cco start
 
 > **💡 Tip**: Ollama models run completely offline and are free! Perfect for privacy-sensitive work or when you don't have API credits.
 
+## 💻 Using DeepSeek (Coding Models)
+
+DeepSeek provides powerful AI models specialized for coding tasks at competitive pricing.
+
+### 🔑 Get API Key
+
+1. Visit [DeepSeek Platform](https://platform.deepseek.com/)
+2. Sign up or log in
+3. Navigate to API Keys section
+4. Create a new API key
+
+### 🚀 Use with CCO
+
+```bash
+# Add to your config or use CCO_API_KEY
+export CCO_API_KEY="your-deepseek-api-key"
+cco start
+
+# Use DeepSeek models in Claude Code
+# Select model: deepseek,deepseek-chat
+# Or: deepseek,deepseek-coder
+# Or: deepseek,deepseek-reasoner
+```
+
+### 🎯 Available Models
+
+<table>
+<tr>
+<td width="50%">
+
+**💬 deepseek-chat**
+- General purpose conversation
+- Strong reasoning capabilities
+- Cost-effective for most tasks
+
+</td>
+<td width="50%">
+
+**💻 deepseek-coder**
+- Specialized for coding
+- Excellent code generation
+- Supports many languages
+
+</td>
+</tr>
+<tr>
+<td colspan="2">
+
+**🧠 deepseek-reasoner**
+- Advanced reasoning mode
+- Chain-of-thought responses
+- Best for complex problems
+
+</td>
+</tr>
+</table>
+
+## ⚡ Using Groq (Ultra-Fast Inference)
+
+Groq provides blazing-fast inference for open source models using custom LPU hardware.
+
+### 🔑 Get API Key
+
+1. Visit [Groq Console](https://console.groq.com/)
+2. Sign up with GitHub or email
+3. Navigate to API Keys
+4. Create a new API key
+
+### 🚀 Use with CCO
+
+```bash
+# Add to your config or use CCO_API_KEY
+export CCO_API_KEY="your-groq-api-key"
+cco start
+
+# Use Groq models in Claude Code
+# Select model: groq,llama-3.3-70b-versatile
+# Or: groq,llama-3.1-8b-instant
+# Or: groq,mixtral-8x7b-32768
+```
+
+### 🎯 Available Models
+
+<table>
+<tr>
+<td width="50%">
+
+**🦙 Llama Models**
+- `llama-3.3-70b-versatile` - Largest, most capable
+- `llama-3.1-70b-versatile` - Balanced performance
+- `llama-3.1-8b-instant` - Fastest responses
+
+</td>
+<td width="50%">
+
+**⚡ Other Models**
+- `mixtral-8x7b-32768` - Mixture of Experts
+- `gemma2-9b-it` - Google's Gemma
+- All with ultra-low latency!
+
+</td>
+</tr>
+</table>
+
+> **⚡ Speed**: Groq delivers responses up to 10x faster than traditional cloud providers thanks to specialized LPU hardware!
+
 ## 🔄 Dynamic Model Selection
 
 The router supports explicit provider and model selection using comma notation, which overrides all automatic routing logic:
@@ -438,6 +546,16 @@ providers:
     api_key: ollama  # Placeholder - Ollama doesn't validate API keys
     # url: http://localhost:11434/v1/chat/completions (default)
     # Automatically configured with llama3.2, codellama, mistral, etc.
+
+  # DeepSeek - Coding-focused models
+  - name: deepseek
+    api_key: your-deepseek-api-key
+    # Automatically configured with deepseek-chat, deepseek-coder, etc.
+
+  # Groq - Ultra-fast inference
+  - name: groq
+    api_key: your-groq-api-key
+    # Automatically configured with llama-3.3-70b, mixtral, gemma2, etc.
 
 # Router configuration for different use cases
 router:
@@ -976,12 +1094,32 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 ## 📈 Changelog
 
 <details>
-<summary><b>🎯 v0.3.0 - Latest Release</b></summary>
+<summary><b>🎯 v0.4.0 - Latest Release</b></summary>
 
 <br>
 
-✨ **New Providers** - Added Nvidia, Google Gemini, and Ollama support (6 total providers)
-🏠 **Local Model Support** - Run models locally with Ollama integration
+✨ **New Providers** - Added Ollama, DeepSeek, and Groq (8 total providers - matches CCR!)
+🏠 **Local Model Support** - Run models completely offline with Ollama
+💻 **Coding Specialists** - DeepSeek models optimized for code generation
+⚡ **Ultra-Fast Inference** - Groq's LPU hardware for 10x faster responses
+📄 **YAML Configuration** - Modern YAML config with automatic defaults
+🔍 **Model Whitelisting** - Filter available models per provider using patterns
+🔐 **API Key Protection** - Optional proxy-level authentication
+💻 **Enhanced CLI** - New `cco config generate` command
+🧪 **Comprehensive Testing** - 100% test coverage for all providers
+📋 **Default Model Management** - Auto-populated curated model lists
+🔄 **Streaming Tool Calls** - Fixed complex streaming parameter issues
+
+**Phase 1 Provider Parity Complete!** CCO now matches claude-code-router's provider count.
+
+</details>
+
+<details>
+<summary><b>📦 v0.3.0 - Provider Expansion</b></summary>
+
+<br>
+
+✨ **New Providers** - Added Nvidia and Google Gemini (5 total providers)
 📄 **YAML Configuration** - Modern YAML config with automatic defaults
 🔍 **Model Whitelisting** - Filter available models per provider using patterns
 🔐 **API Key Protection** - Optional proxy-level authentication
