@@ -30,6 +30,7 @@ As simple as `CCO_API_KEY="<openrouter key>" cco code` and then selecting `openr
 - **Anthropic** - Native Claude model support
 - **NVIDIA** - Nemotron models via API
 - **Google Gemini** - Gemini model family
+- **Ollama** - Local models (llama, mistral, codellama, etc.)
 
 ### ⚡ Zero-Config Setup
 - Run with just `CCO_API_KEY` environment variable
@@ -178,7 +179,7 @@ For advanced setups with multiple API keys, generate a complete YAML configurati
 cco config generate  # or claude-code-open config generate
 ```
 
-This creates `config.yaml` with all 5 supported providers and sensible defaults. Then edit the file to add your API keys:
+This creates `config.yaml` with all 6 supported providers and sensible defaults. Then edit the file to add your API keys:
 
 ```yaml
 # config.yaml
@@ -242,6 +243,73 @@ claude-code-open stop
 </td>
 </tr>
 </table>
+
+## 🏠 Using Ollama (Local Models)
+
+Ollama allows you to run models locally on your machine. Here's how to get started:
+
+### 📦 Install Ollama
+
+```bash
+# macOS/Linux
+curl -fsSL https://ollama.com/install.sh | sh
+
+# Or visit https://ollama.com for other installation methods
+```
+
+### 🚀 Pull and Run Models
+
+```bash
+# Pull a model (e.g., Llama 3.2)
+ollama pull llama3.2
+
+# Or pull a coding model
+ollama pull qwen2.5-coder
+
+# List available models
+ollama list
+
+# Ollama server runs automatically on http://localhost:11434
+```
+
+### 💬 Use with Claude Code Open
+
+Once Ollama is running, use it with CCO:
+
+```bash
+# Start CCO (Ollama will be auto-configured)
+cco start
+
+# Use Ollama models in Claude Code
+# Select model: ollama,llama3.2
+# Or: ollama,qwen2.5-coder
+# Or: ollama,codellama
+```
+
+### 🎯 Example Models
+
+<table>
+<tr>
+<td width="50%">
+
+**💻 Coding Models**
+- `qwen2.5-coder` - Excellent for code
+- `codellama` - Meta's CodeLlama
+- `deepseek-coder` - DeepSeek specialized
+
+</td>
+<td width="50%">
+
+**🧠 General Models**
+- `llama3.2` - Latest Llama
+- `llama3.1` - Llama 3.1
+- `mistral` - Mistral models
+
+</td>
+</tr>
+</table>
+
+> **💡 Tip**: Ollama models run completely offline and are free! Perfect for privacy-sensitive work or when you don't have API credits.
 
 ## 🔄 Dynamic Model Selection
 
@@ -364,6 +432,12 @@ providers:
   # Google Gemini
   - name: gemini
     api_key: your-gemini-api-key
+
+  # Ollama - Local models (no real API key needed)
+  - name: ollama
+    api_key: ollama  # Placeholder - Ollama doesn't validate API keys
+    # url: http://localhost:11434/v1/chat/completions (default)
+    # Automatically configured with llama3.2, codellama, mistral, etc.
 
 # Router configuration for different use cases
 router:
@@ -906,14 +980,15 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 <br>
 
-✨ **New Providers** - Added Nvidia and Google Gemini support (5 total providers)  
-📄 **YAML Configuration** - Modern YAML config with automatic defaults  
-🔍 **Model Whitelisting** - Filter available models per provider using patterns  
-🔐 **API Key Protection** - Optional proxy-level authentication  
-💻 **Enhanced CLI** - New `cco config generate` command  
-🧪 **Comprehensive Testing** - 100% test coverage for all providers  
-📋 **Default Model Management** - Auto-populated curated model lists  
-🔄 **Streaming Tool Calls** - Fixed complex streaming parameter issues  
+✨ **New Providers** - Added Nvidia, Google Gemini, and Ollama support (6 total providers)
+🏠 **Local Model Support** - Run models locally with Ollama integration
+📄 **YAML Configuration** - Modern YAML config with automatic defaults
+🔍 **Model Whitelisting** - Filter available models per provider using patterns
+🔐 **API Key Protection** - Optional proxy-level authentication
+💻 **Enhanced CLI** - New `cco config generate` command
+🧪 **Comprehensive Testing** - 100% test coverage for all providers
+📋 **Default Model Management** - Auto-populated curated model lists
+🔄 **Streaming Tool Calls** - Fixed complex streaming parameter issues
 
 </details>
 

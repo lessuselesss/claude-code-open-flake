@@ -85,6 +85,8 @@ func (r *Registry) GetByDomain(apiBase string) (Provider, error) {
 		"api.nvidia.com":                    "nvidia",
 		"generativelanguage.googleapis.com": "gemini",
 		"googleapis.com":                    "gemini",
+		"localhost":                         "ollama",
+		"127.0.0.1":                         "ollama",
 	}
 
 	if providerName, exists := domainProviderMap[domain]; exists {
@@ -121,6 +123,8 @@ func (r *Registry) Initialize(cfgProviders []config.Provider) {
 			r.Register(NewNvidiaProvider(cfgProvider))
 		case "gemini":
 			r.Register(NewGeminiProvider(cfgProvider))
+		case "ollama":
+			r.Register(NewOllamaProvider(cfgProvider))
 		}
 	}
 }

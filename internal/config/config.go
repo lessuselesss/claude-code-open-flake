@@ -26,6 +26,7 @@ var (
 		"anthropic":  "https://api.anthropic.com/v1/messages",
 		"nvidia":     "https://integrate.api.nvidia.com/v1/chat/completions",
 		"gemini":     "https://generativelanguage.googleapis.com/v1beta/models",
+		"ollama":     "http://localhost:11434/v1/chat/completions",
 	}
 
 	// Default models for each provider
@@ -55,6 +56,13 @@ var (
 			"gemini-2.0-flash",
 			"gemini-1.5-pro",
 			"gemini-1.5-flash",
+		},
+		"ollama": {
+			"llama3.2",
+			"llama3.1",
+			"codellama",
+			"mistral",
+			"qwen2.5-coder",
 		},
 	}
 )
@@ -127,6 +135,7 @@ func (m *Manager) createMinimalConfig() Config {
 			{Name: "anthropic", APIBase: DefaultProviderURLs["anthropic"]},
 			{Name: "nvidia", APIBase: DefaultProviderURLs["nvidia"]},
 			{Name: "gemini", APIBase: DefaultProviderURLs["gemini"]},
+			{Name: "ollama", APIBase: DefaultProviderURLs["ollama"]},
 		},
 		Router: RouterConfig{
 			Default:     "openrouter,anthropic/claude-3.5-sonnet",
@@ -405,6 +414,10 @@ func (m *Manager) CreateExampleYAML() error {
 			{
 				Name:   "gemini",
 				APIKey: "your-gemini-api-key",
+			},
+			{
+				Name:   "ollama",
+				APIKey: "ollama", // Ollama doesn't require a real API key
 			},
 		},
 		Router: RouterConfig{
