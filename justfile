@@ -4,7 +4,7 @@
 
 # Variables
 binary_name := "cco"
-version := "0.7.0"
+version := "0.8.0"
 build_dir := "build"
 main_package := "."
 
@@ -223,6 +223,26 @@ stats:
     @echo "Test files: $(find . -name '*_test.go' | wc -l)"
     @echo "Lines of code: $(find . -name '*.go' -not -path './vendor/*' -not -name '*_test.go' -exec cat {} \; | wc -l)"
     @echo "Test coverage: $(go test -cover ./... 2>/dev/null | grep 'coverage:' | tail -1 || echo 'Run just coverage')"
+
+# Initialize workflow templates
+workflow-init:
+    ./{{binary_name}} workflow init
+
+# List all workflows
+workflow-list:
+    ./{{binary_name}} workflow list
+
+# Show workflow details
+workflow-show NAME:
+    ./{{binary_name}} workflow show {{NAME}}
+
+# Run a workflow
+workflow-run NAME:
+    ./{{binary_name}} workflow run {{NAME}}
+
+# Dry run a workflow
+workflow-dry-run NAME:
+    ./{{binary_name}} workflow run {{NAME}} --dry-run
 
 # Help - show all recipes with descriptions
 help:

@@ -17,7 +17,7 @@ import (
 const (
 	AppName    = "claude-code-open"
 	OldAppName = "claude-code-router" // For backward compatibility
-	Version    = "0.7.0"
+	Version    = "0.8.0"
 )
 
 var (
@@ -59,6 +59,7 @@ func init() {
 	rootCmd.AddCommand(activateCmd)
 	rootCmd.AddCommand(pluginsCmd)
 	rootCmd.AddCommand(uiCmd)
+	rootCmd.AddCommand(workflowCmd)
 }
 
 var rootCmd = &cobra.Command{

@@ -816,6 +816,78 @@ cco ui --port 8080  # Custom port
 - 🎯 Interactive provider cards with model counts
 - 📈 Token usage by model breakdown
 
+### 📋 Workflow Automation
+
+Automate complex tasks with pre-defined multi-step workflows:
+
+```bash
+# Initialize default workflow templates
+cco workflow init
+
+# List all available workflows
+cco workflow list
+cco wf list  # Short alias
+
+# Show workflow details
+cco workflow show setup-ollama
+
+# Execute a workflow
+cco workflow run setup-ollama
+
+# Dry run to see what would happen
+cco workflow run production-setup --dry-run
+```
+
+**Built-in Workflows:**
+
+| Workflow | Description |
+|----------|-------------|
+| **setup-ollama** | Set up Ollama provider for local models |
+| **production-setup** | Configure CCO for production deployment |
+| **add-provider** | Interactive provider addition wizard |
+| **backup-config** | Backup current CCO configuration |
+| **health-check** | Run comprehensive health check |
+
+**Example: Setup Ollama**
+```bash
+# One command to install and configure Ollama
+cco workflow run setup-ollama
+
+# Steps performed:
+# 1. Check Ollama installation
+# 2. Start Ollama service
+# 3. Configure provider in CCO
+# 4. Test connection
+```
+
+**Create Custom Workflows:**
+
+Workflows are JSON files stored in `~/.claude-code-open/workflows/`. Create your own:
+
+```json
+{
+  "name": "my-workflow",
+  "description": "My custom workflow",
+  "version": "1.0.0",
+  "steps": [
+    {
+      "name": "Step 1",
+      "type": "command",
+      "command": "echo",
+      "args": ["Hello, World!"]
+    }
+  ]
+}
+```
+
+**Workflow Features:**
+- ✅ Multi-step execution plans
+- ✅ Error handling (continue, abort, retry, prompt)
+- ✅ Variable substitution
+- ✅ Interactive prompts
+- ✅ Dry-run mode
+- ✅ Built-in templates for common tasks
+
 ### 💬 Claude Code Integration
 
 ```bash
@@ -1200,7 +1272,27 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 ## 📈 Changelog
 
 <details>
-<summary><b>🎯 v0.7.0 - Latest Release</b></summary>
+<summary><b>🎯 v0.8.0 - Latest Release</b></summary>
+
+<br>
+
+📋 **Workflow Automation** - Multi-step workflow execution system
+🔄 **Built-in Templates** - 5 default workflows for common tasks
+🎯 **Interactive Execution** - Step-by-step progress with error handling
+🔧 **Custom Workflows** - Create your own JSON-based workflows
+⚡ **Dry Run Mode** - Preview workflow execution without changes
+📝 **Variable Substitution** - Dynamic values in workflow steps
+🛠️ **Step Types** - Command, configure, test, prompt, validate, and more
+❌ **Error Handling** - Continue, abort, retry, or prompt on failures
+📊 **Workflow Manager** - List, show, run, and delete workflows
+🚀 **Quick Setup** - One-command setup for complex tasks (e.g., Ollama)
+
+**Phase 5 Workflow System Complete!** CCO now automates complex multi-step operations with intelligent planning and execution.
+
+</details>
+
+<details>
+<summary><b>📦 v0.7.0 - Web UI Dashboard</b></summary>
 
 <br>
 
