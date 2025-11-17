@@ -63,7 +63,7 @@
           # IMPORTANT: You need to calculate this hash.
           # Run `nix build .#claude-code-open` once, it will fail and tell you the correct hash.
           # Or, run `nix-prefetch-go --mod-file go.mod` in the project directory.
-          vendorHash = "sha256-rBDPd2E2zNUiXImEYkudUWiGNJcKFWQ+vkK8WoHJB1I=";
+          vendorHash = "sha256-KM6DvNr7k7AeZ4RmnSkzpePVKnXFW2rdx6IU7NtWufw=";
 
           # Go build flags
           ldflags = [ "-s" "-w" ];
