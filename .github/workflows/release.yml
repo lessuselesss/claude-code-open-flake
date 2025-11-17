@@ -27,21 +27,21 @@ jobs:
     - name: Build binaries
       run: |
         mkdir -p build
-        
+
         # Build for multiple platforms
         platforms=("linux/amd64" "linux/arm64" "darwin/amd64" "darwin/arm64" "windows/amd64")
-        
+
         for platform in "${platforms[@]}"; do
           IFS='/' read -r goos goarch <<< "$platform"
-          output="build/ccr-${goos}-${goarch}"
-          
+          output="build/cco-${goos}-${goarch}"
+
           if [ "$goos" = "windows" ]; then
             output="${output}.exe"
           fi
-          
+
           echo "Building for $goos/$goarch..."
           GOOS="$goos" GOARCH="$goarch" go build \
-            -ldflags="-s -w -X 'github.com/Davincible/claude-code-router-go/cmd.Version=${GITHUB_REF#refs/tags/}'" \
+            -ldflags="-s -w -X 'github.com/Davincible/claude-code-open/cmd.Version=${GITHUB_REF#refs/tags/}'" \
             -o "$output" \
             .
         done
@@ -58,39 +58,42 @@ jobs:
         files: |
           build/*
         body: |
-          ## Claude Code Router ${{ github.ref_name }}
-          
+          ## Claude Code Open ${{ github.ref_name }}
+
           ### Installation
-          
+
           Download the appropriate binary for your platform and add it to your PATH.
-          
+
           ### Linux/macOS
           ```bash
           # Download and install (replace with your platform)
-          wget https://github.com/Davincible/claude-code-router-go/releases/download/${{ github.ref_name }}/ccr-linux-amd64
-          chmod +x ccr-linux-amd64
-          sudo mv ccr-linux-amd64 /usr/local/bin/ccr
+          wget https://github.com/Davincible/claude-code-open/releases/download/${{ github.ref_name }}/cco-linux-amd64
+          chmod +x cco-linux-amd64
+          sudo mv cco-linux-amd64 /usr/local/bin/cco
           ```
-          
+
           ### Windows
           ```powershell
-          # Download ccr-windows-amd64.exe and add to PATH
+          # Download cco-windows-amd64.exe and add to PATH
           ```
-          
+
           ### Quick Start
           ```bash
           # Initialize configuration
-          ccr config init
-          
+          cco config init
+
           # Start the router
-          ccr start
-          
+          cco start
+
+          # Launch web UI
+          cco ui
+
           # Use with Claude Code
-          ccr code
+          cco code
           ```
-          
+
           ### Checksums
-          
+
           Verify your download with the checksums in `checksums.txt`.
           
         draft: false
