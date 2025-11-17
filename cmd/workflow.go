@@ -203,7 +203,7 @@ func runWorkflowShow(cmd *cobra.Command, args []string) error {
 	// Display steps
 	color.Cyan("Steps:")
 	for i, step := range wf.Steps {
-		fmt.Printf("\n%d. %s", i+1, color.New(color.Bold).Sprintf(step.Name))
+		fmt.Printf("\n%d. %s", i+1, color.New(color.Bold).Sprint(step.Name))
 		fmt.Printf(" [%s]\n", step.Type)
 
 		if step.Description != "" {
