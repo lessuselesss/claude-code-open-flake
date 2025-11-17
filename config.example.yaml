@@ -14,63 +14,16 @@ providers:
     # url: https://openrouter.ai/api/v1/chat/completions  # Optional: URL is set automatically
     model_whitelist:       # Optional: restrict to specific model patterns
       - claude             # Allow any model containing "claude"
-      - gpt-4              # Allow any model containing "gpt-4"
-    # default_models are set automatically based on provider
+      - gpt-4             # Allow any model containing "gpt-4"
+
+  # Local LM Studio instance
+  - name: local-lmstudio
+    url: "http://localhost:1234/v1/chat/completions"
+    api_key: "not-needed"  # Local servers typically don't need auth
 
   # OpenAI - Direct access to GPT models
   - name: openai
     api_key: your-openai-api-key
-    model_whitelist: ["gpt-4"]
-    default_models:
-      - babbage-002
-      - dall-e-2
-      - dall-e-3
-      - davinci-002
-      - gpt-3.5-turbo
-      - gpt-3.5-turbo-0125
-      - gpt-3.5-turbo-1106
-      - gpt-3.5-turbo-16k
-      - gpt-3.5-turbo-instruct
-      - gpt-3.5-turbo-instruct-0914
-      - gpt-4.1
-      - gpt-4.1-2025-04-14
-      - gpt-4.1-mini
-      - gpt-4.1-mini-2025-04-14
-      - gpt-4.1-nano
-      - gpt-4.1-nano-2025-04-14
-      - gpt-4o
-      - gpt-4o-2024-05-13
-      - gpt-4o-2024-08-06
-      - gpt-4o-2024-11-20
-      - gpt-4o-audio-preview
-      - gpt-4o-audio-preview-2024-10-01
-      - gpt-4o-audio-preview-2024-12-17
-      - gpt-4o-audio-preview-2025-06-03
-      - gpt-4o-mini
-      - gpt-4o-mini-2024-07-18
-      - gpt-4o-mini-audio-preview
-      - gpt-4o-mini-audio-preview-2024-12-17
-      - gpt-4o-mini-search-preview
-      - gpt-4o-mini-search-preview-2025-03-11
-      - gpt-4o-mini-transcribe
-      - gpt-4o-mini-tts
-      - gpt-4o-search-preview
-      - gpt-4o-search-preview-2025-03-11
-      - gpt-4o-transcribe
-      - gpt-image-1
-      - o1-mini
-      - o1-mini-2024-09-12
-      - omni-moderation-2024-09-26
-      - omni-moderation-latest
-      - text-embedding-3-large
-      - text-embedding-3-small
-      - text-embedding-ada-002
-      - tts-1
-      - tts-1-1106
-      - tts-1-hd
-      - tts-1-hd-1106
-      - whisper-1
-    # All GPT models will be available by default
 
   # Anthropic - Direct access to Claude models  
   - name: anthropic
@@ -92,19 +45,53 @@ providers:
   - name: gemini
     api_key: your-gemini-api-key
 
+  # Ollama - Local models (no API key needed)
+  - name: ollama
+    url: "http://localhost:11434/v1/chat/completions"
+    api_key: "ollama"  # Ollama doesn't validate API keys
+    default_models:
+      - llama3.2
+      - llama3.1
+      - mistral
+      - qwen2.5-coder
+
+  # DeepSeek - Coding-focused models
+  - name: deepseek
+    api_key: your-deepseek-api-key
+    default_models:
+      - deepseek-coder
+      - deepseek-reasoner
+
+  # Groq - Ultra-fast inference
+  - name: groq
+    api_key: your-groq-api-key
+    default_models:
+      - llama-3.3-70b-versatile
+      - mixtral-8x7b-32768
+
+# Domain mappings - route local domains to existing providers
+domain_mappings:
+  localhost: openai       # Route localhost requests to OpenAI provider
+  127.0.0.1: gemini      # Route 127.0.0.1 requests to Gemini provider  
+  0.0.0.0: openrouter    # Route 0.0.0.0 requests to OpenRouter provider
+
 # Router configuration for different use cases
 router:
-  default: openrouter/anthropic/claude-3.5-sonnet           # Default model
-  think: openai/o1-preview                                   # For complex reasoning
-  background: anthropic/claude-3-haiku-20240307             # For background tasks
-  long_context: anthropic/claude-3-5-sonnet-20241022        # For long documents
-  web_search: openrouter/perplexity/llama-3.1-sonar-huge-128k-online  # For web search
+  default: local-lmstudio/qwen/qwen3-coder-30b           # Default to local model
+  think: openai/o1-preview                               # For complex reasoning
+  background: anthropic/claude-3-haiku-20240307         # For background tasks
+  long_context: anthropic/claude-3-5-sonnet-20241022    # For long documents
+  web_search: openrouter/perplexity/llama-3.1-sonar-huge-128k-online
 
 # Features:
 # - YAML takes precedence over JSON configuration
 # - Default URLs are set automatically for all providers
 # - Default models are populated for each provider
 # - Model whitelist allows filtering available models
-# - All 5 major LLM providers are supported
+# - All 8 major LLM providers are supported (OpenRouter, OpenAI, Anthropic, Nvidia, Gemini, Ollama, DeepSeek, Groq)
 # - Proxy can be protected with an API key
 # - Different models can be configured for different use cases
+# - domain_mappings allows routing local server requests to existing provider transformations
+# - localhost requests will use OpenAI provider's request/response transformation
+# - This enables local model support without needing a separate LocalProvider
+# - You can map any domain to any configured or built-in provider

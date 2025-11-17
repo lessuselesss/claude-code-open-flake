@@ -34,6 +34,11 @@ func New(configManager *config.Manager, logger *slog.Logger) *Server {
 	cfg := configManager.Get()
 	registry.Initialize(cfg.Providers)
 
+	// Apply domain mappings from config
+	if cfg != nil && cfg.DomainMappings != nil {
+		registry.SetDomainMappings(cfg.DomainMappings)
+	}
+
 	return &Server{
 		config:   configManager,
 		registry: registry,
