@@ -21,31 +21,23 @@ const (
 )
 
 var (
-	logger  *slog.Logger
-	homeDir string
-	baseDir string
-	cfgMgr  *config.Manager
+	logger     *slog.Logger
+	homeDir    string
+	baseDir    string
+	cfgMgr     *config.Manager
+	configPath string
 )
 
 func init() {
+	cobra.OnInitialize(initConfig)
+
 	// Initialize logger
 	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelInfo,
 	})
 	logger = slog.New(handler)
 
-	// Setup directories with backward compatibility
-	var err error
-
-	homeDir, err = os.UserHomeDir()
-	if err != nil {
-		logger.Error("Failed to get home directory", "error", err)
-		os.Exit(1)
-	}
-
-	baseDir = getConfigDirectory(homeDir)
-	cfgMgr = config.NewManager(baseDir)
-
+	rootCmd.PersistentFlags().StringVarP(&configPath, "config", "c", "", "path to config file (e.g. /path/to/config.yaml)")
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "enable verbose logging")
 	rootCmd.PersistentFlags().BoolP("log-file", "l", false, "enable file logging")
 
@@ -67,6 +59,23 @@ var rootCmd = &cobra.Command{
 	Short:   "Claude Code Open - LLM Proxy Server",
 	Long:    `A production-ready LLM proxy server that converts requests from various providers to Anthropic's Claude API format.`,
 	Version: Version,
+}
+
+func initConfig() {
+	if configPath != "" {
+		cfgMgr = config.NewManagerWithPath(configPath)
+		baseDir = filepath.Dir(configPath)
+	} else {
+		var err error
+		homeDir, err = os.UserHomeDir()
+		if err != nil {
+			logger.Error("Failed to get home directory", "error", err)
+			os.Exit(1)
+		}
+
+		baseDir = getConfigDirectory(homeDir)
+		cfgMgr = config.NewManager(baseDir)
+	}
 }
 
 func Execute() {

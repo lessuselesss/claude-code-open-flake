@@ -149,6 +149,21 @@ func NewManager(baseDir string) *Manager {
 	}
 }
 
+func NewManagerWithPath(configPath string) *Manager {
+	m := &Manager{
+		baseDir: filepath.Dir(configPath),
+	}
+	ext := filepath.Ext(configPath)
+	if ext == ".yaml" || ext == ".yml" {
+		m.yamlPath = configPath
+		m.jsonPath = strings.TrimSuffix(configPath, ext) + ".json"
+	} else {
+		m.jsonPath = configPath
+		m.yamlPath = strings.TrimSuffix(configPath, ext) + ".yaml"
+	}
+	return m
+}
+
 // createMinimalConfig creates a minimal configuration with all providers using CCO_API_KEY
 func (m *Manager) createMinimalConfig() Config {
 	return Config{
